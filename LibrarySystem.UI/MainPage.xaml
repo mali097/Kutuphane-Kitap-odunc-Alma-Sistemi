@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- GIT FORCE TEST 123456 -->
+    
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.MainPage"
+             BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <Label Text="GitHub test 123" />
+            <!-- LOGO -->
+            <Image Source="dotnet_bot.png"
+                   HeightRequest="150"
+                   HorizontalOptions="Center"/>
+
+            <!-- BASLIK -->
+            <Label Text="Kütüphane Sistemi"
+                   FontSize="26"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="Black"/>
+
+            <!-- ALT YAZI -->
+            <Label Text="Kitap ödünç alma uygulaması"
+                   FontSize="14"
+                   HorizontalOptions="Center"
+                   TextColor="Gray"/>
+
+            <!-- SENİN TEST LABEL -->
+            <Label Text="GITHUB TEST BASARILI"
+                   FontSize="18"
+                   TextColor="Green"
+                   HorizontalOptions="Center"/>
+
+            <!-- INPUT -->
+            <Entry Placeholder="Kullanıcı adı gir"
+                   BackgroundColor="White"
+                   TextColor="Black"/>
+
+            <Entry Placeholder="Şifre gir"
+                   IsPassword="True"
+                   BackgroundColor="White"
+                   TextColor="Black"/>
+
+            <!-- BUTON -->
+            <Button Text="Giriş Yap"
+                    BackgroundColor="#2196F3"
+                    TextColor="White"
+                    CornerRadius="10"
+                    HeightRequest="50"/>
+
+            <!-- EK BUTON -->
+            <Button Text="Kitapları Gör"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    CornerRadius="10"
+                    HeightRequest="50"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
