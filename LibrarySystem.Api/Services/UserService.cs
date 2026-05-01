@@ -1,4 +1,5 @@
 using LibrarySystem.Api.Data;
+using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 
