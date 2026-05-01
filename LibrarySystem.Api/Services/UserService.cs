@@ -57,10 +57,30 @@ public sealed class UserService : IUserService
             return false;
         }
 
-        user.FirstName = request.FirstName.Trim();
-        user.LastName = request.LastName.Trim();
-        user.Email = request.Email.Trim();
-        user.Role = request.Role.Trim();
+        if (!string.IsNullOrWhiteSpace(request.FirstName))
+        {
+            user.FirstName = request.FirstName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.LastName))
+        {
+            user.LastName = request.LastName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            user.Email = request.Email.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Role))
+        {
+            user.Role = request.Role.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.PasswordHash))
+        {
+            user.PasswordHash = request.PasswordHash.Trim();
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
         return true;
