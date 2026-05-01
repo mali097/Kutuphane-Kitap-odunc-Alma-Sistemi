@@ -12,46 +12,38 @@ namespace LibrarySystem.Api.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<BorrowRecord> BorrowRecords { get; set; }
-        public override int SaveChanges()
+
+        private void ApplyAuditInformation()
         {
-            // Entity Framework'ün o an takip ettiği ve BaseEntity'den miras alan tüm kayıtları yakala
             var entries = ChangeTracker.Entries<BaseEntity>();
+            var utcNow = DateTime.UtcNow;
 
             foreach (var entry in entries)
             {
-                // Eğer bu veri veritabanına YENİ EKLENİYORSA
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedDate = DateTime.Now;
+                    entry.Entity.CreatedDate = utcNow;
+                    continue;
                 }
-                // Eğer bu veri veritabanında GÜNCELLENİYORSA
-                else if (entry.State == EntityState.Modified)
+
+                if (entry.State == EntityState.Modified)
                 {
-                    entry.Entity.UpdatedDate = DateTime.Now;
+                    entry.Entity.UpdatedDate = utcNow;
+                    // CreatedDate alanının istemeden değiştirilmesini engeller.
+                    entry.Property(entity => entity.CreatedDate).IsModified = false;
                 }
             }
+        }
 
-            // Bizim eklediğimiz tarihlerle birlikte asıl kaydetme işlemini çalıştır
+        public override int SaveChanges()
+        {
+            ApplyAuditInformation();
             return base.SaveChanges();
         }
 
-        // 11. Madde İçin: Kaydetmeden hemen önce tarihleri otomatik basar
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var entries = ChangeTracker.Entries<BaseEntity>();
-
-            foreach (var entry in entries)
-            {
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Entity.CreatedDate = DateTime.Now;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    entry.Entity.UpdatedDate = DateTime.Now;
-                }
-            }
-
+            ApplyAuditInformation();
             return base.SaveChangesAsync(cancellationToken);
         }
     }

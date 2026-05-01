@@ -1,9 +1,9 @@
 ﻿using LibrarySystem.Api.Data;
 using LibrarySystem.Api.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Api.Services
 {
-    // 21. madde: Service sınıfı oluşturma
     public class BookService : IBookService
     {
         private readonly LibraryDbContext _context;
@@ -13,28 +13,46 @@ namespace LibrarySystem.Api.Services
             _context = context;
         }
 
-        public List<Book> GetAllBooks()
+        public async Task<List<Book>> GetAllBooksAsync(CancellationToken cancellationToken = default)
         {
-            // Veritabanındaki tüm kitapları listele (Madde 7 ve 24)
-            return _context.Books.Where(x => !x.IsDeleted).ToList();
+            return await _context.Books
+                .AsNoTracking()
+                .Where(book => !book.IsDeleted)
+                .OrderBy(book => book.Title)
+                .ToListAsync(cancellationToken);
         }
 
-        public int AddBook(Book newBook)
+        public async Task<Book?> GetBookByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            // Veritabanına ekle (Madde 8)
+            return await _context.Books
+                .AsNoTracking()
+                .FirstOrDefaultAsync(book => book.Id == id && !book.IsDeleted, cancellationToken);
+        }
+
+        public async Task<int> AddBookAsync(Book newBook, CancellationToken cancellationToken = default)
+        {
+            newBook.Title = newBook.Title.Trim();
+            newBook.Author = newBook.Author.Trim();
+            newBook.Isbn = newBook.Isbn.Trim();
+            newBook.Genre = newBook.Genre.Trim();
+
             _context.Books.Add(newBook);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync(cancellationToken);
             return newBook.Id;
         }
 
-        public bool DeleteBook(int id)
+        public async Task<bool> DeleteBookAsync(int id, CancellationToken cancellationToken = default)
         {
-            var book = _context.Books.Find(id);
-            if (book == null) return false;
+            var book = await _context.Books
+                .FirstOrDefaultAsync(item => item.Id == id && !item.IsDeleted, cancellationToken);
 
-            // Soft Delete (Madde 10)
+            if (book is null)
+            {
+                return false;
+            }
+
             book.IsDeleted = true;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
     }
