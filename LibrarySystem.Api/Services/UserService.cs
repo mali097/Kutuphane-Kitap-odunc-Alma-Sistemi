@@ -31,15 +31,16 @@ public sealed class UserService : IUserService
             .FirstOrDefaultAsync(user => user.Id == id && !user.IsDeleted, cancellationToken);
     }
 
-    public async Task<int> AddAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<int> AddAsync(CreateUserRequest request, int? actorUserId = null, CancellationToken cancellationToken = default)
     {
         var newUser = new User
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Email = request.Email.Trim(),
-            PasswordHash = string.IsNullOrWhiteSpace(request.PasswordHash) ? string.Empty : request.PasswordHash.Trim(),
-            Role = request.Role.Trim()
+            PasswordHash = AuthService.ComputeSha256(request.PasswordHash),
+            Role = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim(),
+            CreatedBy = actorUserId ?? 0
         };
 
         _context.Users.Add(newUser);
@@ -47,7 +48,11 @@ public sealed class UserService : IUserService
         return newUser.Id;
     }
 
-    public async Task<bool> UpdateAsync(int id, UpdateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(
+        int id,
+        UpdateUserRequest request,
+        int? actorUserId = null,
+        CancellationToken cancellationToken = default)
     {
         var user = await _context.Users
             .FirstOrDefaultAsync(item => item.Id == id && !item.IsDeleted, cancellationToken);
@@ -59,40 +64,35 @@ public sealed class UserService : IUserService
 
         if (HasMeaningfulValue(request.FirstName))
         {
-            user.FirstName = request.FirstName.Trim();
+            user.FirstName = request.FirstName!.Trim();
         }
 
         if (HasMeaningfulValue(request.LastName))
         {
-            user.LastName = request.LastName.Trim();
+            user.LastName = request.LastName!.Trim();
         }
 
         if (HasMeaningfulValue(request.Email))
         {
-            user.Email = request.Email.Trim();
+            user.Email = request.Email!.Trim();
         }
 
         if (HasMeaningfulValue(request.Role))
         {
-            user.Role = request.Role.Trim();
+            user.Role = request.Role!.Trim();
         }
 
         if (HasMeaningfulValue(request.PasswordHash))
         {
-            user.PasswordHash = request.PasswordHash.Trim();
+            user.PasswordHash = AuthService.ComputeSha256(request.PasswordHash!);
         }
 
+        user.UpdatedBy = actorUserId ?? user.UpdatedBy ?? 0;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    private static bool HasMeaningfulValue(string? value)
-    {
-        return !string.IsNullOrWhiteSpace(value)
-            && !string.Equals(value.Trim(), "string", StringComparison.OrdinalIgnoreCase);
-    }
-
-    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(int id, int? actorUserId = null, CancellationToken cancellationToken = default)
     {
         var user = await _context.Users
             .FirstOrDefaultAsync(item => item.Id == id && !item.IsDeleted, cancellationToken);
@@ -103,7 +103,14 @@ public sealed class UserService : IUserService
         }
 
         user.IsDeleted = true;
+        user.UpdatedBy = actorUserId ?? user.UpdatedBy ?? 0;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static bool HasMeaningfulValue(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && !string.Equals(value.Trim(), "string", StringComparison.OrdinalIgnoreCase);
     }
 }
