@@ -67,12 +67,30 @@ app.MapDelete("/api/books/{id:int}", async (int id, IBookService bookService, Ca
         : Results.NotFound(new { Message = "Book not found." });
 });
 
+app.MapGet("/api/users", async (IUserService userService, CancellationToken cancellationToken) =>
+{
+    var users = await userService.GetAllAsync(cancellationToken);
+    return Results.Ok(users.Select(MapUserToResponse));
+});
+
 app.MapGet("/api/users/{id:int}", async (int id, IUserService userService, CancellationToken cancellationToken) =>
 {
     var user = await userService.GetByIdAsync(id, cancellationToken);
     return user is null
         ? Results.NotFound(new { Message = "User not found." })
         : Results.Ok(MapUserToResponse(user));
+});
+
+app.MapPost("/api/users", async (CreateUserRequest request, IUserService userService, CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateCreateUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var newUserId = await userService.AddAsync(request, cancellationToken);
+    return Results.Created($"/api/users/{newUserId}", new { Message = "User added successfully.", UserId = newUserId });
 });
 
 app.MapPut("/api/users/{id:int}", async (int id, UpdateUserRequest request, IUserService userService, CancellationToken cancellationToken) =>
@@ -86,6 +104,14 @@ app.MapPut("/api/users/{id:int}", async (int id, UpdateUserRequest request, IUse
     var isUpdated = await userService.UpdateAsync(id, request, cancellationToken);
     return isUpdated
         ? Results.Ok(new { Message = "User updated." })
+        : Results.NotFound(new { Message = "User not found." });
+});
+
+app.MapDelete("/api/users/{id:int}", async (int id, IUserService userService, CancellationToken cancellationToken) =>
+{
+    var isDeleted = await userService.DeleteAsync(id, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "User deleted." })
         : Results.NotFound(new { Message = "User not found." });
 });
 
@@ -148,6 +174,33 @@ static Dictionary<string, string[]> ValidateUpdateUserRequest(UpdateUserRequest 
     if (string.IsNullOrWhiteSpace(request.Email))
     {
         errors["email"] = ["Email is required."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.FirstName))
+    {
+        errors["firstName"] = ["FirstName is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.LastName))
+    {
+        errors["lastName"] = ["LastName is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.PasswordHash))
+    {
+        errors["passwordHash"] = ["PasswordHash is required."];
     }
 
     return errors;
