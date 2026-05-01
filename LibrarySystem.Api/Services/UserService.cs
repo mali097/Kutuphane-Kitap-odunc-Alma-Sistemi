@@ -57,33 +57,39 @@ public sealed class UserService : IUserService
             return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(request.FirstName))
+        if (HasMeaningfulValue(request.FirstName))
         {
             user.FirstName = request.FirstName.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(request.LastName))
+        if (HasMeaningfulValue(request.LastName))
         {
             user.LastName = request.LastName.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Email))
+        if (HasMeaningfulValue(request.Email))
         {
             user.Email = request.Email.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Role))
+        if (HasMeaningfulValue(request.Role))
         {
             user.Role = request.Role.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(request.PasswordHash))
+        if (HasMeaningfulValue(request.PasswordHash))
         {
             user.PasswordHash = request.PasswordHash.Trim();
         }
 
         await _context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static bool HasMeaningfulValue(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && !string.Equals(value.Trim(), "string", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)

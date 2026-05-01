@@ -160,27 +160,38 @@ static BookResponse MapToResponse(Book book)
 static Dictionary<string, string[]> ValidateUpdateUserRequest(UpdateUserRequest request)
 {
     var errors = new Dictionary<string, string[]>();
-    if (request.FirstName is not null && string.IsNullOrWhiteSpace(request.FirstName))
+    if (IsInvalidPatchValue(request.FirstName))
     {
         errors["firstName"] = ["FirstName cannot be empty when provided."];
     }
 
-    if (request.LastName is not null && string.IsNullOrWhiteSpace(request.LastName))
+    if (IsInvalidPatchValue(request.LastName))
     {
         errors["lastName"] = ["LastName cannot be empty when provided."];
     }
 
-    if (request.Email is not null && string.IsNullOrWhiteSpace(request.Email))
+    if (IsInvalidPatchValue(request.Email))
     {
         errors["email"] = ["Email cannot be empty when provided."];
     }
 
-    if (request.Role is not null && string.IsNullOrWhiteSpace(request.Role))
+    if (IsInvalidPatchValue(request.Role))
     {
         errors["role"] = ["Role cannot be empty when provided."];
     }
 
     return errors;
+}
+
+static bool IsInvalidPatchValue(string? value)
+{
+    if (value is null)
+    {
+        return false;
+    }
+
+    var trimmed = value.Trim();
+    return trimmed.Length == 0;
 }
 
 static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest request)
