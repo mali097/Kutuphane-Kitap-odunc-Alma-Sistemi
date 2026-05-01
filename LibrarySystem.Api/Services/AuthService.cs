@@ -20,13 +20,13 @@ public sealed class AuthService : IAuthService
 
     public async Task<UserLoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedEmail = request.Email.Trim();
         var passwordHash = ComputeSha256(request.Password);
 
         var user = await _context.Users
             .FirstOrDefaultAsync(
                 item => !item.IsDeleted
-                    && item.Email.ToLowerInvariant() == normalizedEmail
+                    && item.Email == normalizedEmail
                     && item.PasswordHash == passwordHash,
                 cancellationToken);
 
