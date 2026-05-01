@@ -5,8 +5,9 @@ namespace LibrarySystem.Api.Services
     
     public interface IBookService
     {
-        List<Book> GetAllBooks();
-        int AddBook(Book newBook);
-        bool DeleteBook(int id);
+        Task<List<Book>> GetAllBooksAsync(CancellationToken cancellationToken = default);
+        Task<Book?> GetBookByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<int> AddBookAsync(Book newBook, CancellationToken cancellationToken = default);
+        Task<bool> DeleteBookAsync(int id, CancellationToken cancellationToken = default);
     }
 }

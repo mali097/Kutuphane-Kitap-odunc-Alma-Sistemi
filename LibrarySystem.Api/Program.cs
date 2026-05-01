@@ -1,4 +1,5 @@
 using LibrarySystem.Api.Data;
+using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
 using Microsoft.EntityFrameworkCore;
@@ -6,39 +7,13 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-// BookService'i sisteme enjekte ediyoruz
 builder.Services.AddScoped<IBookService, BookService>();
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-// --- KÝTAP API UÇ NOKTALARI ---
 
-// 1. Tüm Kitaplarý Listele (GET)
-app.MapGet("/api/books", (IBookService bookService) =>
-{
-    var books = bookService.GetAllBooks();
-    return Results.Ok(books);
-});
-
-// 2. Yeni Kitap Ekle (POST)
-app.MapPost("/api/books", (Book newBook, IBookService bookService) =>
-{
-    var newId = bookService.AddBook(newBook);
-    return Results.Ok(new { Message = "Kitap baþarýyla eklendi!", BookId = newId });
-});
-
-// 3. Kitap Sil (DELETE)
-app.MapDelete("/api/books/{id}", (int id, IBookService bookService) =>
-{
-    var result = bookService.DeleteBook(id);
-    return result ? Results.Ok("Silindi.") : Results.NotFound("Bulunamadý.");
-});
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -47,29 +22,98 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("/api/books", async (IBookService bookService, CancellationToken cancellationToken) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var books = await bookService.GetAllBooksAsync(cancellationToken);
+    return Results.Ok(books.Select(MapToResponse));
+});
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+    var book = await bookService.GetBookByIdAsync(id, cancellationToken);
+    return book is null
+        ? Results.NotFound(new { Message = "Book not found." })
+        : Results.Ok(MapToResponse(book));
+});
+
+app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookService, CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateCreateBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var newBook = new Book
+    {
+        Title = request.Title,
+        Author = request.Author,
+        Isbn = request.Isbn,
+        Genre = request.Genre,
+        PublishYear = request.PublishYear,
+        IsAvailable = request.IsAvailable
+    };
+
+    var newId = await bookService.AddBookAsync(newBook, cancellationToken);
+    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
+});
+
+app.MapDelete("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
+{
+    var isDeleted = await bookService.DeleteBookAsync(id, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "Book deleted." })
+        : Results.NotFound(new { Message = "Book not found." });
+});
 
 app.Run();
 
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest request)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Title))
+    {
+        errors["title"] = ["Title is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Author))
+    {
+        errors["author"] = ["Author is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Isbn))
+    {
+        errors["isbn"] = ["Isbn is required."];
+    }
+
+    if (request.PublishYear < 0 || request.PublishYear > DateTime.UtcNow.Year + 1)
+    {
+        errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    return errors;
 }
+
+static BookResponse MapToResponse(Book book)
+{
+    return new BookResponse(
+        book.Id,
+        book.Title,
+        book.Author,
+        book.Isbn,
+        book.Genre,
+        book.PublishYear,
+        book.IsAvailable
+    );
+}
+
+internal sealed record BookResponse(
+    int Id,
+    string Title,
+    string Author,
+    string Isbn,
+    string Genre,
+    int PublishYear,
+    bool IsAvailable
+);
