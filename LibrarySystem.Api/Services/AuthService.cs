@@ -11,7 +11,7 @@ namespace LibrarySystem.Api.Services;
 public sealed class AuthService : IAuthService
 {
     private readonly LibraryDbContext _context;
-    private readonly ConcurrentDictionary<string, int> _sessionStore = new();
+    private static readonly ConcurrentDictionary<string, int> SessionStore = new();
 
     public AuthService(LibraryDbContext context)
     {
@@ -36,7 +36,7 @@ public sealed class AuthService : IAuthService
         }
 
         var token = Guid.NewGuid().ToString("N");
-        _sessionStore[token] = user.Id;
+        SessionStore[token] = user.Id;
         user.UpdatedBy = user.Id;
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -53,7 +53,7 @@ public sealed class AuthService : IAuthService
     public Task<bool> LogoutAsync(UserLogoutRequest request, CancellationToken cancellationToken = default)
     {
         var sessionToken = request.SessionToken.Trim();
-        var removed = _sessionStore.TryRemove(sessionToken, out var userId);
+        var removed = SessionStore.TryRemove(sessionToken, out var userId);
         if (!removed)
         {
             return Task.FromResult(false);
@@ -93,7 +93,7 @@ public sealed class AuthService : IAuthService
 
     public bool TryGetUserIdByToken(string token, out int userId)
     {
-        return _sessionStore.TryGetValue(token.Trim(), out userId);
+        return SessionStore.TryGetValue(token.Trim(), out userId);
     }
 
     public static string ComputeSha256(string value)
