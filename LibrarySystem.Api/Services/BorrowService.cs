@@ -32,12 +32,13 @@ public sealed class BorrowService : IBorrowService
 
         book.IsAvailable = false;
 
+        var borrowDate = DateTime.UtcNow;
         var borrowRecord = new BorrowRecord
         {
             UserId = request.UserId,
             BookId = request.BookId,
-            BorrowDate = DateTime.UtcNow,
-            ExpectedReturnDate = request.ExpectedReturnDate,
+            BorrowDate = borrowDate,
+            ExpectedReturnDate = borrowDate.AddDays(15),
             IsReturned = false,
             CreatedBy = actingUserId
         };

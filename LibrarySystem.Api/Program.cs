@@ -500,11 +500,6 @@ static Dictionary<string, string[]> ValidateBorrowBookRequest(BorrowBookRequest 
         errors["bookId"] = ["BookId must be greater than 0."];
     }
 
-    if (request.ExpectedReturnDate.Date <= DateTime.UtcNow.Date)
-    {
-        errors["expectedReturnDate"] = ["ExpectedReturnDate must be later than today."];
-    }
-
     return errors;
 }
 
