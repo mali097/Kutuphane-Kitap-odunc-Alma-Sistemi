@@ -1,13 +1,19 @@
+using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
 using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
+const string ActorUserIdHeader = "X-Actor-User-Id";
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBorrowService, BorrowService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -22,10 +28,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+<<<<<<< HEAD
+app.MapGet("/api/books", async (
+    [AsParameters] GetBooksQuery query,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(query, cancellationToken);
+    return Results.Ok(books.Select(MapBookToResponse));
+=======
 app.MapGet("/api/books", async (IBookService bookService, CancellationToken cancellationToken) =>
 {
     var books = await bookService.GetAllBooksAsync(cancellationToken);
     return Results.Ok(books.Select(MapToResponse));
+>>>>>>> origin/main
 });
 
 app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
@@ -33,10 +49,21 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
     var book = await bookService.GetBookByIdAsync(id, cancellationToken);
     return book is null
         ? Results.NotFound(new { Message = "Book not found." })
+<<<<<<< HEAD
+        : Results.Ok(MapBookToResponse(book));
+});
+
+app.MapPost("/api/books", async (
+    CreateBookRequest request,
+    HttpContext httpContext,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+=======
         : Results.Ok(MapToResponse(book));
 });
 
 app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookService, CancellationToken cancellationToken) =>
+>>>>>>> origin/main
 {
     var validationErrors = ValidateCreateBookRequest(request);
     if (validationErrors.Count != 0)
@@ -44,6 +71,10 @@ app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookSer
         return Results.ValidationProblem(validationErrors);
     }
 
+<<<<<<< HEAD
+    var actorUserId = GetActorUserId(httpContext);
+=======
+>>>>>>> origin/main
     var newBook = new Book
     {
         Title = request.Title,
@@ -54,6 +85,40 @@ app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookSer
         IsAvailable = request.IsAvailable
     };
 
+<<<<<<< HEAD
+    var newId = await bookService.AddBookAsync(newBook, actorUserId, cancellationToken);
+    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
+});
+
+app.MapPut("/api/books/{id:int}", async (
+    int id,
+    UpdateBookRequest request,
+    HttpContext httpContext,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateUpdateBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var actorUserId = GetActorUserId(httpContext);
+    var isUpdated = await bookService.UpdateBookAsync(id, request, actorUserId, cancellationToken);
+    return isUpdated
+        ? Results.Ok(new { Message = "Book updated." })
+        : Results.NotFound(new { Message = "Book not found." });
+});
+
+app.MapDelete("/api/books/{id:int}", async (
+    int id,
+    HttpContext httpContext,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var actorUserId = GetActorUserId(httpContext);
+    var isDeleted = await bookService.DeleteBookAsync(id, actorUserId, cancellationToken);
+=======
     var newId = await bookService.AddBookAsync(newBook, cancellationToken);
     return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
 });
@@ -61,10 +126,437 @@ app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookSer
 app.MapDelete("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
 {
     var isDeleted = await bookService.DeleteBookAsync(id, cancellationToken);
+>>>>>>> origin/main
     return isDeleted
         ? Results.Ok(new { Message = "Book deleted." })
         : Results.NotFound(new { Message = "Book not found." });
 });
+<<<<<<< HEAD
+
+app.MapGet("/api/users", async (IUserService userService, CancellationToken cancellationToken) =>
+{
+    var users = await userService.GetAllAsync(cancellationToken);
+    return Results.Ok(users.Select(MapUserToResponse));
+});
+
+app.MapGet("/api/users/{id:int}", async (int id, IUserService userService, CancellationToken cancellationToken) =>
+{
+    var user = await userService.GetByIdAsync(id, cancellationToken);
+    return user is null
+        ? Results.NotFound(new { Message = "User not found." })
+        : Results.Ok(MapUserToResponse(user));
+});
+
+app.MapPost("/api/users", async (
+    CreateUserRequest request,
+    HttpContext httpContext,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateCreateUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var actorUserId = GetActorUserId(httpContext);
+    var newUserId = await userService.AddAsync(request, actorUserId, cancellationToken);
+    return Results.Created($"/api/users/{newUserId}", new { Message = "User added successfully.", UserId = newUserId });
+});
+
+app.MapPut("/api/users/{id:int}", async (
+    int id,
+    UpdateUserRequest request,
+    HttpContext httpContext,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateUpdateUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var actorUserId = GetActorUserId(httpContext);
+    var isUpdated = await userService.UpdateAsync(id, request, actorUserId, cancellationToken);
+    return isUpdated
+        ? Results.Ok(new { Message = "User updated." })
+        : Results.NotFound(new { Message = "User not found." });
+});
+
+app.MapDelete("/api/users/{id:int}", async (
+    int id,
+    HttpContext httpContext,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var actorUserId = GetActorUserId(httpContext);
+    var isDeleted = await userService.DeleteAsync(id, actorUserId, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "User deleted." })
+        : Results.NotFound(new { Message = "User not found." });
+});
+
+app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateLoginRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var response = await authService.LoginAsync(request, cancellationToken);
+    return response is null
+        ? Results.BadRequest(new { Message = "Invalid email or password." })
+        : Results.Ok(response);
+});
+
+app.MapPost("/api/auth/logout", async (UserLogoutRequest request, IAuthService authService, CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateLogoutRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var isLoggedOut = await authService.LogoutAsync(request, cancellationToken);
+    return isLoggedOut
+        ? Results.Ok(new { Message = "Logged out." })
+        : Results.BadRequest(new { Message = "Session token is invalid." });
+});
+
+app.MapPost("/api/users/{id:int}/change-password", async (
+    int id,
+    ChangePasswordRequest request,
+    IAuthService authService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateChangePasswordRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var isChanged = await authService.ChangePasswordAsync(id, request, cancellationToken);
+    return isChanged
+        ? Results.Ok(new { Message = "Password changed." })
+        : Results.BadRequest(new { Message = "Current password is invalid or user not found." });
+});
+
+app.MapGet("/api/borrow-records", async (
+    int? userId,
+    int? bookId,
+    bool? isReturned,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var records = await borrowService.GetBorrowRecordsAsync(userId, bookId, isReturned, cancellationToken);
+    return Results.Ok(records.Select(MapBorrowRecordToResponse));
+});
+
+app.MapPost("/api/borrow-records/borrow", async (
+    BorrowBookRequest request,
+    HttpContext httpContext,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateBorrowBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var actorUserId = GetActorUserId(httpContext);
+    var recordId = await borrowService.BorrowBookAsync(request, actorUserId, cancellationToken);
+    return recordId.HasValue
+        ? Results.Created($"/api/borrow-records/{recordId.Value}", new { Message = "Book borrowed.", BorrowRecordId = recordId.Value })
+        : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
+});
+
+app.MapPost("/api/borrow-records/return", async (
+    ReturnBookRequest request,
+    HttpContext httpContext,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateReturnBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var actorUserId = GetActorUserId(httpContext);
+    var isReturned = await borrowService.ReturnBookAsync(request, actorUserId, cancellationToken);
+    return isReturned
+        ? Results.Ok(new { Message = "Book returned." })
+        : Results.BadRequest(new { Message = "Return action failed. Record not found or already returned." });
+});
+
+app.Run();
+
+static int GetActorUserId(HttpContext context)
+{
+    if (context.Request.Headers.TryGetValue(ActorUserIdHeader, out var values)
+        && int.TryParse(values.ToString(), out var parsedId)
+        && parsedId > 0)
+    {
+        return parsedId;
+    }
+
+    // Default actor id for dev/testing scenarios.
+    return 1;
+}
+
+static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Title))
+    {
+        errors["title"] = ["Title is required."];
+    }
+    else if (request.Title.Trim().Length > 200)
+    {
+        errors["title"] = ["Title cannot be longer than 200 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Author))
+    {
+        errors["author"] = ["Author is required."];
+    }
+    else if (request.Author.Trim().Length > 120)
+    {
+        errors["author"] = ["Author cannot be longer than 120 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Isbn))
+    {
+        errors["isbn"] = ["Isbn is required."];
+    }
+    else if (request.Isbn.Trim().Length > 30)
+    {
+        errors["isbn"] = ["Isbn cannot be longer than 30 characters."];
+    }
+
+    if (request.PublishYear < 0 || request.PublishYear > DateTime.UtcNow.Year + 1)
+    {
+        errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateUpdateBookRequest(UpdateBookRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (IsInvalidPatchValue(request.Title))
+    {
+        errors["title"] = ["Title cannot be empty when provided."];
+    }
+    else if (request.Title is not null && request.Title.Trim().Length > 200)
+    {
+        errors["title"] = ["Title cannot be longer than 200 characters."];
+    }
+
+    if (IsInvalidPatchValue(request.Author))
+    {
+        errors["author"] = ["Author cannot be empty when provided."];
+    }
+    else if (request.Author is not null && request.Author.Trim().Length > 120)
+    {
+        errors["author"] = ["Author cannot be longer than 120 characters."];
+    }
+
+    if (IsInvalidPatchValue(request.Isbn))
+    {
+        errors["isbn"] = ["Isbn cannot be empty when provided."];
+    }
+    else if (request.Isbn is not null && request.Isbn.Trim().Length > 30)
+    {
+        errors["isbn"] = ["Isbn cannot be longer than 30 characters."];
+    }
+
+    if (request.PublishYear.HasValue && (request.PublishYear.Value < 0 || request.PublishYear.Value > DateTime.UtcNow.Year + 1))
+    {
+        errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateUpdateUserRequest(UpdateUserRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+    if (IsInvalidPatchValue(request.FirstName))
+    {
+        errors["firstName"] = ["FirstName cannot be empty when provided."];
+    }
+    else if (request.FirstName is not null && request.FirstName.Trim().Length > 80)
+    {
+        errors["firstName"] = ["FirstName cannot be longer than 80 characters."];
+    }
+
+    if (IsInvalidPatchValue(request.LastName))
+    {
+        errors["lastName"] = ["LastName cannot be empty when provided."];
+    }
+    else if (request.LastName is not null && request.LastName.Trim().Length > 80)
+    {
+        errors["lastName"] = ["LastName cannot be longer than 80 characters."];
+    }
+
+    if (IsInvalidPatchValue(request.Email))
+    {
+        errors["email"] = ["Email cannot be empty when provided."];
+    }
+    else if (request.Email is not null && request.Email.Trim().Length > 150)
+    {
+        errors["email"] = ["Email cannot be longer than 150 characters."];
+    }
+
+    if (IsInvalidPatchValue(request.Role))
+    {
+        errors["role"] = ["Role cannot be empty when provided."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.FirstName))
+    {
+        errors["firstName"] = ["FirstName is required."];
+    }
+    else if (request.FirstName.Trim().Length > 80)
+    {
+        errors["firstName"] = ["FirstName cannot be longer than 80 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.LastName))
+    {
+        errors["lastName"] = ["LastName is required."];
+    }
+    else if (request.LastName.Trim().Length > 80)
+    {
+        errors["lastName"] = ["LastName cannot be longer than 80 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+    else if (request.Email.Trim().Length > 150)
+    {
+        errors["email"] = ["Email cannot be longer than 150 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.PasswordHash))
+    {
+        errors["passwordHash"] = ["PasswordHash is required."];
+    }
+    else if (request.PasswordHash.Trim().Length < 6)
+    {
+        errors["passwordHash"] = ["Password must be at least 6 characters."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Password))
+    {
+        errors["password"] = ["Password is required."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateLogoutRequest(UserLogoutRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+    if (string.IsNullOrWhiteSpace(request.SessionToken))
+    {
+        errors["sessionToken"] = ["SessionToken is required."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateChangePasswordRequest(ChangePasswordRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+    {
+        errors["currentPassword"] = ["CurrentPassword is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.NewPassword))
+    {
+        errors["newPassword"] = ["NewPassword is required."];
+    }
+    else if (request.NewPassword.Trim().Length < 6)
+    {
+        errors["newPassword"] = ["NewPassword must be at least 6 characters."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateBorrowBookRequest(BorrowBookRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (request.UserId <= 0)
+    {
+        errors["userId"] = ["UserId must be greater than 0."];
+    }
+
+    if (request.BookId <= 0)
+    {
+        errors["bookId"] = ["BookId must be greater than 0."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateReturnBookRequest(ReturnBookRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (request.BorrowRecordId <= 0)
+    {
+        errors["borrowRecordId"] = ["BorrowRecordId must be greater than 0."];
+    }
+
+    return errors;
+}
+
+static bool IsInvalidPatchValue(string? value)
+{
+    if (value is null)
+    {
+        return false;
+    }
+
+    var trimmed = value.Trim();
+    return trimmed.Length == 0;
+}
+
+static BookResponse MapBookToResponse(Book book)
+=======
 
 app.Run();
 
@@ -96,6 +588,7 @@ static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest 
 }
 
 static BookResponse MapToResponse(Book book)
+>>>>>>> origin/main
 {
     return new BookResponse(
         book.Id,
@@ -108,6 +601,33 @@ static BookResponse MapToResponse(Book book)
     );
 }
 
+<<<<<<< HEAD
+static UserResponse MapUserToResponse(User user)
+{
+    return new UserResponse(
+        user.Id,
+        user.FirstName,
+        user.LastName,
+        user.Email,
+        user.Role
+    );
+}
+
+static BorrowRecordResponse MapBorrowRecordToResponse(BorrowRecord record)
+{
+    return new BorrowRecordResponse(
+        record.Id,
+        record.UserId,
+        record.BookId,
+        record.BorrowDate,
+        record.ExpectedReturnDate,
+        record.ActualReturnDate,
+        record.IsReturned
+    );
+}
+
+=======
+>>>>>>> origin/main
 internal sealed record BookResponse(
     int Id,
     string Title,
@@ -117,3 +637,24 @@ internal sealed record BookResponse(
     int PublishYear,
     bool IsAvailable
 );
+<<<<<<< HEAD
+
+internal sealed record UserResponse(
+    int Id,
+    string FirstName,
+    string LastName,
+    string Email,
+    string Role
+);
+
+internal sealed record BorrowRecordResponse(
+    int Id,
+    int UserId,
+    int BookId,
+    DateTime BorrowDate,
+    DateTime ExpectedReturnDate,
+    DateTime? ActualReturnDate,
+    bool IsReturned
+);
+=======
+>>>>>>> origin/main

@@ -1,0 +1,15 @@
+using LibrarySystem.Api.Entities;
+using LibrarySystem.Api.Contracts;
+
+namespace LibrarySystem.Api.Services;
+
+public interface IBorrowService
+{
+    Task<int?> BorrowBookAsync(BorrowBookRequest request, int actingUserId, CancellationToken cancellationToken = default);
+    Task<bool> ReturnBookAsync(ReturnBookRequest request, int actingUserId, CancellationToken cancellationToken = default);
+    Task<List<BorrowRecord>> GetBorrowRecordsAsync(
+        int? userId,
+        int? bookId,
+        bool? isReturned,
+        CancellationToken cancellationToken = default);
+}
