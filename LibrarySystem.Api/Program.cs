@@ -1,5 +1,6 @@
 using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
+using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+<<<<<<< HEAD
 app.MapGet("/api/books", async (
     [AsParameters] GetBooksQuery query,
     IBookService bookService,
@@ -34,6 +36,12 @@ app.MapGet("/api/books", async (
 {
     var books = await bookService.GetAllBooksAsync(query, cancellationToken);
     return Results.Ok(books.Select(MapBookToResponse));
+=======
+app.MapGet("/api/books", async (IBookService bookService, CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(cancellationToken);
+    return Results.Ok(books.Select(MapToResponse));
+>>>>>>> origin/main
 });
 
 app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
@@ -41,6 +49,7 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
     var book = await bookService.GetBookByIdAsync(id, cancellationToken);
     return book is null
         ? Results.NotFound(new { Message = "Book not found." })
+<<<<<<< HEAD
         : Results.Ok(MapBookToResponse(book));
 });
 
@@ -49,6 +58,12 @@ app.MapPost("/api/books", async (
     HttpContext httpContext,
     IBookService bookService,
     CancellationToken cancellationToken) =>
+=======
+        : Results.Ok(MapToResponse(book));
+});
+
+app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookService, CancellationToken cancellationToken) =>
+>>>>>>> origin/main
 {
     var validationErrors = ValidateCreateBookRequest(request);
     if (validationErrors.Count != 0)
@@ -56,7 +71,10 @@ app.MapPost("/api/books", async (
         return Results.ValidationProblem(validationErrors);
     }
 
+<<<<<<< HEAD
     var actorUserId = GetActorUserId(httpContext);
+=======
+>>>>>>> origin/main
     var newBook = new Book
     {
         Title = request.Title,
@@ -67,6 +85,7 @@ app.MapPost("/api/books", async (
         IsAvailable = request.IsAvailable
     };
 
+<<<<<<< HEAD
     var newId = await bookService.AddBookAsync(newBook, actorUserId, cancellationToken);
     return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
 });
@@ -99,10 +118,20 @@ app.MapDelete("/api/books/{id:int}", async (
 {
     var actorUserId = GetActorUserId(httpContext);
     var isDeleted = await bookService.DeleteBookAsync(id, actorUserId, cancellationToken);
+=======
+    var newId = await bookService.AddBookAsync(newBook, cancellationToken);
+    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
+});
+
+app.MapDelete("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
+{
+    var isDeleted = await bookService.DeleteBookAsync(id, cancellationToken);
+>>>>>>> origin/main
     return isDeleted
         ? Results.Ok(new { Message = "Book deleted." })
         : Results.NotFound(new { Message = "Book not found." });
 });
+<<<<<<< HEAD
 
 app.MapGet("/api/users", async (IUserService userService, CancellationToken cancellationToken) =>
 {
@@ -527,6 +556,39 @@ static bool IsInvalidPatchValue(string? value)
 }
 
 static BookResponse MapBookToResponse(Book book)
+=======
+
+app.Run();
+
+static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Title))
+    {
+        errors["title"] = ["Title is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Author))
+    {
+        errors["author"] = ["Author is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Isbn))
+    {
+        errors["isbn"] = ["Isbn is required."];
+    }
+
+    if (request.PublishYear < 0 || request.PublishYear > DateTime.UtcNow.Year + 1)
+    {
+        errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    return errors;
+}
+
+static BookResponse MapToResponse(Book book)
+>>>>>>> origin/main
 {
     return new BookResponse(
         book.Id,
@@ -539,6 +601,7 @@ static BookResponse MapBookToResponse(Book book)
     );
 }
 
+<<<<<<< HEAD
 static UserResponse MapUserToResponse(User user)
 {
     return new UserResponse(
@@ -563,6 +626,8 @@ static BorrowRecordResponse MapBorrowRecordToResponse(BorrowRecord record)
     );
 }
 
+=======
+>>>>>>> origin/main
 internal sealed record BookResponse(
     int Id,
     string Title,
@@ -572,6 +637,7 @@ internal sealed record BookResponse(
     int PublishYear,
     bool IsAvailable
 );
+<<<<<<< HEAD
 
 internal sealed record UserResponse(
     int Id,
@@ -590,3 +656,5 @@ internal sealed record BorrowRecordResponse(
     DateTime? ActualReturnDate,
     bool IsReturned
 );
+=======
+>>>>>>> origin/main
