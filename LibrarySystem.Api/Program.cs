@@ -47,129 +47,10 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
         : Results.Ok(MapBookToResponse(book));
 });
 
-app.MapPost("/api/books", async (
-    CreateBookRequest request,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateCreateBookRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var newBook = new Book
-    {
-        Title = request.Title,
-        Author = request.Author,
-        Isbn = request.Isbn,
-        Genre = request.Genre,
-        PublishYear = request.PublishYear,
-        IsAvailable = request.IsAvailable
-    };
-
-    var newId = await bookService.AddBookAsync(newBook, actorUserId, cancellationToken);
-    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
-});
-
-app.MapPut("/api/books/{id:int}", async (
-    int id,
-    UpdateBookRequest request,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateUpdateBookRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var isUpdated = await bookService.UpdateBookAsync(id, request, actorUserId, cancellationToken);
-    return isUpdated
-        ? Results.Ok(new { Message = "Book updated." })
-        : Results.NotFound(new { Message = "Book not found." });
-});
-
-app.MapDelete("/api/books/{id:int}", async (
-    int id,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-{
-    var actorUserId = GetActorUserId(httpContext);
-    var isDeleted = await bookService.DeleteBookAsync(id, actorUserId, cancellationToken);
-    return isDeleted
-        ? Results.Ok(new { Message = "Book deleted." })
-        : Results.NotFound(new { Message = "Book not found." });
-});
-
-app.MapGet("/api/users", async (IUserService userService, CancellationToken cancellationToken) =>
-{
-    var users = await userService.GetAllAsync(cancellationToken);
-    return Results.Ok(users.Select(MapUserToResponse));
-});
-
-app.MapGet("/api/users/{id:int}", async (int id, IUserService userService, CancellationToken cancellationToken) =>
-{
-    var user = await userService.GetByIdAsync(id, cancellationToken);
-    return user is null
-        ? Results.NotFound(new { Message = "User not found." })
-        : Results.Ok(MapUserToResponse(user));
-});
-
-app.MapPost("/api/users", async (
-    CreateUserRequest request,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateCreateUserRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var newUserId = await userService.AddAsync(request, actorUserId, cancellationToken);
-    return Results.Created($"/api/users/{newUserId}", new { Message = "User added successfully.", UserId = newUserId });
-});
-
-app.MapPut("/api/users/{id:int}", async (
-    int id,
-    UpdateUserRequest request,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateUpdateUserRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var isUpdated = await userService.UpdateAsync(id, request, actorUserId, cancellationToken);
-    return isUpdated
-        ? Results.Ok(new { Message = "User updated." })
-        : Results.NotFound(new { Message = "User not found." });
-});
-
-app.MapDelete("/api/users/{id:int}", async (
-    int id,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var actorUserId = GetActorUserId(httpContext);
-    var isDeleted = await userService.DeleteAsync(id, actorUserId, cancellationToken);
-    return isDeleted
-        ? Results.Ok(new { Message = "User deleted." })
-        : Results.NotFound(new { Message = "User not found." });
-});
+// Public user capabilities:
+// - list books
+// - view book details
+// - borrow books
 
 app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
 {
@@ -315,6 +196,26 @@ app.MapPost("/api/admin/users", async (
     return Results.Created($"/api/users/{newUserId}", new { Message = "User added by admin.", UserId = newUserId });
 });
 
+app.MapDelete("/api/admin/users/{id:int}", async (
+    int id,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var isDeleted = await userService.DeleteAsync(id, authorization.AdminUserId, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "User deleted by admin." })
+        : Results.NotFound(new { Message = "User not found." });
+});
+
 app.MapPost("/api/admin/books", async (
     CreateBookRequest request,
     [FromHeader(Name = AdminTokenHeader)] string? adminToken,
@@ -347,6 +248,53 @@ app.MapPost("/api/admin/books", async (
 
     var newBookId = await bookService.AddBookAsync(newBook, authorization.AdminUserId, cancellationToken);
     return Results.Created($"/api/books/{newBookId}", new { Message = "Book added by admin.", BookId = newBookId });
+});
+
+app.MapPut("/api/admin/books/{id:int}", async (
+    int id,
+    UpdateBookRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateUpdateBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var isUpdated = await bookService.UpdateBookAsync(id, request, authorization.AdminUserId, cancellationToken);
+    return isUpdated
+        ? Results.Ok(new { Message = "Book updated by admin." })
+        : Results.NotFound(new { Message = "Book not found." });
+});
+
+app.MapDelete("/api/admin/books/{id:int}", async (
+    int id,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var isDeleted = await bookService.DeleteBookAsync(id, authorization.AdminUserId, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "Book deleted by admin." })
+        : Results.NotFound(new { Message = "Book not found." });
 });
 
 app.MapGet("/api/admin/borrow-records", async (
@@ -383,17 +331,6 @@ app.MapGet("/api/admin/borrow-records/active", async (
     return Results.Ok(records.Select(MapAdminBorrowRecordToResponse));
 });
 
-app.MapGet("/api/borrow-records", async (
-    int? userId,
-    int? bookId,
-    bool? isReturned,
-    IBorrowService borrowService,
-    CancellationToken cancellationToken) =>
-{
-    var records = await borrowService.GetBorrowRecordsAsync(userId, bookId, isReturned, cancellationToken);
-    return Results.Ok(records.Select(MapBorrowRecordToResponse));
-});
-
 app.MapPost("/api/borrow-records/borrow", async (
     BorrowBookRequest request,
     HttpContext httpContext,
@@ -413,20 +350,27 @@ app.MapPost("/api/borrow-records/borrow", async (
         : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
 });
 
-app.MapPost("/api/borrow-records/return", async (
+app.MapPost("/api/admin/borrow-records/return", async (
     ReturnBookRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
+    IAuthService authService,
     IBorrowService borrowService,
     CancellationToken cancellationToken) =>
 {
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
     var validationErrors = ValidateReturnBookRequest(request);
     if (validationErrors.Count != 0)
     {
         return Results.ValidationProblem(validationErrors);
     }
 
-    var actorUserId = GetActorUserId(httpContext);
-    var isReturned = await borrowService.ReturnBookAsync(request, actorUserId, cancellationToken);
+    var isReturned = await borrowService.ReturnBookAsync(request, authorization.AdminUserId ?? 0, cancellationToken);
     return isReturned
         ? Results.Ok(new { Message = "Book returned." })
         : Results.BadRequest(new { Message = "Return action failed. Record not found or already returned." });
