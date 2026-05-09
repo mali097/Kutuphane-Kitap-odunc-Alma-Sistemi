@@ -2,6 +2,7 @@ using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 const string ActorUserIdHeader = "X-Actor-User-Id";
@@ -218,7 +219,7 @@ app.MapPost("/api/users/{id:int}/change-password", async (
 
 app.MapPost("/api/admin/bootstrap", async (
     AdminBootstrapRequest request,
-    HttpContext httpContext,
+    [FromHeader(Name = AdminSetupKeyHeader)] string? adminSetupKey,
     IConfiguration configuration,
     IUserService userService,
     CancellationToken cancellationToken) =>
@@ -229,8 +230,8 @@ app.MapPost("/api/admin/bootstrap", async (
         return Results.Problem("Admin bootstrap key is not configured.");
     }
 
-    if (!httpContext.Request.Headers.TryGetValue(AdminSetupKeyHeader, out var setupKeyValues)
-        || !string.Equals(setupKeyValues.ToString(), configuredSetupKey, StringComparison.Ordinal))
+    if (string.IsNullOrWhiteSpace(adminSetupKey)
+        || !string.Equals(adminSetupKey.Trim(), configuredSetupKey, StringComparison.Ordinal))
     {
         return Results.Unauthorized();
     }
@@ -274,12 +275,13 @@ app.MapPost("/api/admin/login", async (LoginRequest request, IAuthService authSe
 });
 
 app.MapGet("/api/admin/users", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
     IAuthService authService,
     IUserService userService,
     CancellationToken cancellationToken) =>
 {
-    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
     if (!authorization.IsAuthorized)
     {
         return authorization.ErrorResult!;
@@ -291,12 +293,13 @@ app.MapGet("/api/admin/users", async (
 
 app.MapPost("/api/admin/users", async (
     CreateUserRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
     IAuthService authService,
     IUserService userService,
     CancellationToken cancellationToken) =>
 {
-    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
     if (!authorization.IsAuthorized)
     {
         return authorization.ErrorResult!;
@@ -314,12 +317,13 @@ app.MapPost("/api/admin/users", async (
 
 app.MapPost("/api/admin/books", async (
     CreateBookRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
     IAuthService authService,
     IBookService bookService,
     CancellationToken cancellationToken) =>
 {
-    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
     if (!authorization.IsAuthorized)
     {
         return authorization.ErrorResult!;
@@ -346,12 +350,13 @@ app.MapPost("/api/admin/books", async (
 });
 
 app.MapGet("/api/admin/borrow-records", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
     IAuthService authService,
     IBorrowService borrowService,
     CancellationToken cancellationToken) =>
 {
-    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
     if (!authorization.IsAuthorized)
     {
         return authorization.ErrorResult!;
@@ -362,12 +367,13 @@ app.MapGet("/api/admin/borrow-records", async (
 });
 
 app.MapGet("/api/admin/borrow-records/active", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
     IAuthService authService,
     IBorrowService borrowService,
     CancellationToken cancellationToken) =>
 {
-    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
     if (!authorization.IsAuthorized)
     {
         return authorization.ErrorResult!;
@@ -441,11 +447,12 @@ static int GetActorUserId(HttpContext context)
 }
 
 static async Task<AdminAuthorizationResult> AuthorizeAdminAsync(
+    string? adminTokenHeaderValue,
     HttpContext context,
     IAuthService authService,
     CancellationToken cancellationToken)
 {
-    var sessionToken = GetAdminSessionToken(context);
+    var sessionToken = GetAdminSessionToken(adminTokenHeaderValue, context);
     if (string.IsNullOrWhiteSpace(sessionToken))
     {
         return new AdminAuthorizationResult(false, null, Results.Unauthorized());
@@ -466,8 +473,13 @@ static async Task<AdminAuthorizationResult> AuthorizeAdminAsync(
     return new AdminAuthorizationResult(true, userId.Value, null);
 }
 
-static string? GetAdminSessionToken(HttpContext context)
+static string? GetAdminSessionToken(string? adminTokenHeaderValue, HttpContext context)
 {
+    if (!string.IsNullOrWhiteSpace(adminTokenHeaderValue))
+    {
+        return adminTokenHeaderValue.Trim();
+    }
+
     if (context.Request.Headers.TryGetValue(AdminTokenHeader, out var values))
     {
         var headerValue = values.ToString().Trim();
