@@ -20,15 +20,33 @@ public sealed class AuthService : IAuthService
 
     public async Task<UserLoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
+        return await LoginInternalAsync(request, requireAdmin: false, cancellationToken);
+    }
+
+    public async Task<UserLoginResponse?> LoginAdminAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        return await LoginInternalAsync(request, requireAdmin: true, cancellationToken);
+    }
+
+    private async Task<UserLoginResponse?> LoginInternalAsync(
+        LoginRequest request,
+        bool requireAdmin,
+        CancellationToken cancellationToken)
+    {
         var normalizedEmail = request.Email.Trim();
         var passwordHash = ComputeSha256(request.Password);
 
-        var user = await _context.Users
-            .FirstOrDefaultAsync(
-                item => !item.IsDeleted
-                    && item.Email == normalizedEmail
-                    && item.PasswordHash == passwordHash,
-                cancellationToken);
+        IQueryable<User> query = _context.Users
+            .Where(item => !item.IsDeleted
+                && item.Email == normalizedEmail
+                && item.PasswordHash == passwordHash);
+
+        if (requireAdmin)
+        {
+            query = query.Where(item => item.Role == "Admin");
+        }
+
+        var user = await query.FirstOrDefaultAsync(cancellationToken);
 
         if (user is null)
         {
@@ -94,6 +112,31 @@ public sealed class AuthService : IAuthService
     public bool TryGetUserIdByToken(string token, out int userId)
     {
         return SessionStore.TryGetValue(token.Trim(), out userId);
+    }
+
+    public async Task<int?> GetUserIdBySessionTokenAsync(string sessionToken, CancellationToken cancellationToken = default)
+    {
+        var token = sessionToken.Trim();
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
+        if (!SessionStore.TryGetValue(token, out var userId))
+        {
+            return null;
+        }
+
+        var userExists = await _context.Users
+            .AnyAsync(item => item.Id == userId && !item.IsDeleted, cancellationToken);
+
+        return userExists ? userId : null;
+    }
+
+    public async Task<bool> IsUserAdminAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .AnyAsync(item => item.Id == userId && !item.IsDeleted && item.Role == "Admin", cancellationToken);
     }
 
     public static string ComputeSha256(string value)
