@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 const string ActorUserIdHeader = "X-Actor-User-Id";
 const string AdminSetupKeyHeader = "X-Admin-Setup-Key";
 const string AdminTokenHeader = "X-Admin-Token";
+const string AuthorTokenHeader = "X-Author-Token";
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<LibraryDbContext>(options =>
@@ -16,6 +17,7 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBorrowService, BorrowService>();
+builder.Services.AddScoped<IWeeklyRecommendationService, WeeklyRecommendationService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -153,6 +155,42 @@ app.MapPost("/api/admin/login", async (LoginRequest request, IAuthService authSe
     return response is null
         ? Results.BadRequest(new { Message = "Invalid admin credentials." })
         : Results.Ok(response);
+});
+
+app.MapPost("/api/author/recommendations", async (
+    CreateWeeklyRecommendationRequest request,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IWeeklyRecommendationService recommendationService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthorAsync(authorToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateWeeklyRecommendationRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var recommendation = await recommendationService.AddRecommendationAsync(
+        authorization.AdminUserId ?? 0,
+        request,
+        cancellationToken);
+
+    return Results.Created($"/api/recommendations/weekly/{recommendation.RecommendationId}", recommendation);
+});
+
+app.MapGet("/api/recommendations/weekly", async (
+    IWeeklyRecommendationService recommendationService,
+    CancellationToken cancellationToken) =>
+{
+    var recommendations = await recommendationService.GetCurrentWeekRecommendationsAsync(cancellationToken);
+    return Results.Ok(recommendations);
 });
 
 app.MapGet("/api/admin/users", async (
@@ -417,6 +455,33 @@ static async Task<AdminAuthorizationResult> AuthorizeAdminAsync(
     return new AdminAuthorizationResult(true, userId.Value, null);
 }
 
+static async Task<AdminAuthorizationResult> AuthorizeAuthorAsync(
+    string? authorTokenHeaderValue,
+    HttpContext context,
+    IAuthService authService,
+    CancellationToken cancellationToken)
+{
+    var sessionToken = GetAdminSessionToken(authorTokenHeaderValue, context);
+    if (string.IsNullOrWhiteSpace(sessionToken))
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var userId = await authService.GetUserIdBySessionTokenAsync(sessionToken, cancellationToken);
+    if (!userId.HasValue)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var isAuthor = await authService.IsUserAuthorAsync(userId.Value, cancellationToken);
+    if (!isAuthor)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Forbid());
+    }
+
+    return new AdminAuthorizationResult(true, userId.Value, null);
+}
+
 static string? GetAdminSessionToken(string? adminTokenHeaderValue, HttpContext context)
 {
     if (!string.IsNullOrWhiteSpace(adminTokenHeaderValue))
@@ -600,6 +665,31 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
     else if (request.PasswordHash.Trim().Length < 6)
     {
         errors["passwordHash"] = ["Password must be at least 6 characters."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateCreateWeeklyRecommendationRequest(CreateWeeklyRecommendationRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.BookTitle))
+    {
+        errors["bookTitle"] = ["BookTitle is required."];
+    }
+    else if (request.BookTitle.Trim().Length > 200)
+    {
+        errors["bookTitle"] = ["BookTitle cannot be longer than 200 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Idea))
+    {
+        errors["idea"] = ["Idea is required."];
+    }
+    else if (request.Idea.Trim().Length > 1000)
+    {
+        errors["idea"] = ["Idea cannot be longer than 1000 characters."];
     }
 
     return errors;

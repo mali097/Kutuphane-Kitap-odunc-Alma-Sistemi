@@ -135,8 +135,18 @@ public sealed class AuthService : IAuthService
 
     public async Task<bool> IsUserAdminAsync(int userId, CancellationToken cancellationToken = default)
     {
+        return await IsUserInRoleAsync(userId, "Admin", cancellationToken);
+    }
+
+    public async Task<bool> IsUserAuthorAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await IsUserInRoleAsync(userId, "Author", cancellationToken);
+    }
+
+    private async Task<bool> IsUserInRoleAsync(int userId, string role, CancellationToken cancellationToken)
+    {
         return await _context.Users
-            .AnyAsync(item => item.Id == userId && !item.IsDeleted && item.Role == "Admin", cancellationToken);
+            .AnyAsync(item => item.Id == userId && !item.IsDeleted && item.Role == role, cancellationToken);
     }
 
     public static string ComputeSha256(string value)

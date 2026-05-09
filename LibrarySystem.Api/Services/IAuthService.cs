@@ -10,4 +10,5 @@ public interface IAuthService
     Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
     Task<int?> GetUserIdBySessionTokenAsync(string sessionToken, CancellationToken cancellationToken = default);
     Task<bool> IsUserAdminAsync(int userId, CancellationToken cancellationToken = default);
+    Task<bool> IsUserAuthorAsync(int userId, CancellationToken cancellationToken = default);
 }
