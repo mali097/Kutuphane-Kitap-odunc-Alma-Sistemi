@@ -345,6 +345,38 @@ app.MapPost("/api/admin/books", async (
     return Results.Created($"/api/books/{newBookId}", new { Message = "Book added by admin.", BookId = newBookId });
 });
 
+app.MapGet("/api/admin/borrow-records", async (
+    HttpContext httpContext,
+    IAuthService authService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetAllBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapAdminBorrowRecordToResponse));
+});
+
+app.MapGet("/api/admin/borrow-records/active", async (
+    HttpContext httpContext,
+    IAuthService authService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetActiveBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapAdminBorrowRecordToResponse));
+});
+
 app.MapGet("/api/borrow-records", async (
     int? userId,
     int? bookId,
@@ -773,6 +805,23 @@ static BorrowRecordResponse MapBorrowRecordToResponse(BorrowRecord record)
     );
 }
 
+static AdminBorrowRecordResponse MapAdminBorrowRecordToResponse(BorrowRecord record)
+{
+    return new AdminBorrowRecordResponse(
+        record.Id,
+        record.UserId,
+        record.User?.FirstName ?? string.Empty,
+        record.User?.LastName ?? string.Empty,
+        record.User?.Email ?? string.Empty,
+        record.BookId,
+        record.Book?.Title ?? string.Empty,
+        record.BorrowDate,
+        record.ExpectedReturnDate,
+        record.ActualReturnDate,
+        record.IsReturned
+    );
+}
+
 internal sealed record BookResponse(
     int Id,
     string Title,
@@ -795,6 +844,20 @@ internal sealed record BorrowRecordResponse(
     int Id,
     int UserId,
     int BookId,
+    DateTime BorrowDate,
+    DateTime ExpectedReturnDate,
+    DateTime? ActualReturnDate,
+    bool IsReturned
+);
+
+internal sealed record AdminBorrowRecordResponse(
+    int BorrowRecordId,
+    int UserId,
+    string UserFirstName,
+    string UserLastName,
+    string UserEmail,
+    int BookId,
+    string BookTitle,
     DateTime BorrowDate,
     DateTime ExpectedReturnDate,
     DateTime? ActualReturnDate,

@@ -12,4 +12,6 @@ public interface IBorrowService
         int? bookId,
         bool? isReturned,
         CancellationToken cancellationToken = default);
+    Task<List<BorrowRecord>> GetAllBorrowRecordsWithDetailsAsync(CancellationToken cancellationToken = default);
+    Task<List<BorrowRecord>> GetActiveBorrowRecordsWithDetailsAsync(CancellationToken cancellationToken = default);
 }
