@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.BorrowPage"
+             Title="📚 Ödünç Al">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <Label Text="Kitap Seçin *" FontAttributes="Bold" />
+            <Picker x:Name="BookPicker" Title="Kitap seçin..." />
+
+            <Label Text="İade Tarihi *" FontAttributes="Bold" />
+            <DatePicker x:Name="DueDatePicker" Format="dd/MM/yyyy" />
+
+            <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
+
+            <Button Text="✅ Ödünç Al" BackgroundColor="#FF6F00" TextColor="White"
+                    CornerRadius="10" HeightRequest="50" FontAttributes="Bold"
+                    Clicked="Borrow_Clicked" />
+
+            <Label Text="⚠️ Geciken İadeler" FontAttributes="Bold"
+                   FontSize="16" TextColor="#C62828" Margin="0,20,0,0" />
+
+            <CollectionView x:Name="OverdueList" EmptyView="Geciken iade yok 🎉">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,4" Padding="12" BackgroundColor="#FFEBEE"
+                                StrokeShape="RoundRectangle 10" Stroke="#EF9A9A">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0">
+                                    <Label Text="{Binding BookTitle}" FontAttributes="Bold" TextColor="#B71C1C" />
+                                    <Label Text="{Binding UserFullName}" TextColor="Gray" FontSize="13" />
+                                    <Label Text="{Binding DueDate, StringFormat='Son iade: {0:dd.MM.yyyy}'}"
+                                           TextColor="#EF5350" FontSize="12" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+                                    <Label Text="{Binding DaysOverdue, StringFormat='{0} gün'}"
+                                           FontAttributes="Bold" TextColor="#B71C1C" FontSize="16" />
+                                    <Label Text="{Binding Fine, StringFormat='💸 {0:F1} TL'}"
+                                           TextColor="#E65100" FontSize="13" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

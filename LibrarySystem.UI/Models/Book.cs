@@ -17,6 +17,7 @@ public class Book
     public string Description { get; set; } = string.Empty;
 
     public bool IsAvailable { get; set; } = true;
+    public bool IsFavorite { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public string CreatedBy { get; set; } = string.Empty;

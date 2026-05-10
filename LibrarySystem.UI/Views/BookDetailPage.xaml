@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.BookDetailPage"
+             Title="Kitap Detayı">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <!-- Başlık kartı -->
+            <Border BackgroundColor="#1565C0" StrokeShape="RoundRectangle 14" Stroke="Transparent" Padding="20">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="TitleLabel" TextColor="White" FontSize="20" FontAttributes="Bold" />
+                    <Label x:Name="AuthorLabel" TextColor="#90CAF9" FontSize="14" />
+                    <Label x:Name="StatusLabel" TextColor="White" FontSize="13" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Bilgi satırları -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                <Border Grid.Row="0" Grid.Column="0" BackgroundColor="#E3F2FD" StrokeShape="RoundRectangle 10" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="📄 Sayfa Sayısı" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="PageLabel" FontSize="16" FontAttributes="Bold" TextColor="#1A237E" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="1" BackgroundColor="#E8F5E9" StrokeShape="RoundRectangle 10" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="📅 Yayın Yılı" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="YearLabel" FontSize="16" FontAttributes="Bold" TextColor="#1A237E" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="0" BackgroundColor="#FFF8E1" StrokeShape="RoundRectangle 10" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="📂 Kategori" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="CategoryLabel" FontSize="14" FontAttributes="Bold" TextColor="#1A237E" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" BackgroundColor="#FCE4EC" StrokeShape="RoundRectangle 10" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="🏢 Yayınevi" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="PublisherLabel" FontSize="14" FontAttributes="Bold" TextColor="#1A237E" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Açıklama -->
+            <Border BackgroundColor="#F5F5F5" StrokeShape="RoundRectangle 10" Padding="14">
+                <VerticalStackLayout>
+                    <Label Text="📖 Açıklama" FontAttributes="Bold" TextColor="#1A237E" Margin="0,0,0,6" />
+                    <Label x:Name="DescLabel" TextColor="#455A64" LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Audit log -->
+            <Border BackgroundColor="#FFFDE7" StrokeShape="RoundRectangle 10" Padding="14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="🕐 Kayıt Bilgileri" FontAttributes="Bold" TextColor="#F57F17" />
+                    <Label x:Name="CreatedLabel" FontSize="12" TextColor="Gray" />
+                    <Label x:Name="UpdatedLabel" FontSize="12" TextColor="Gray" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Butonlar (sadece admin görür) -->
+            <VerticalStackLayout x:Name="AdminButtons" IsVisible="False" Spacing="10">
+                <Button Text="✏️ Düzenle" BackgroundColor="#1565C0" TextColor="White"
+                        CornerRadius="10" Clicked="Edit_Clicked" />
+                <Button Text="🗑️ Sil" BackgroundColor="#EF5350" TextColor="White"
+                        CornerRadius="10" Clicked="Delete_Clicked" />
+            </VerticalStackLayout>
+
+            <!-- Kullanıcı için ödünç al -->
+            <Button x:Name="BorrowBtn" Text="📚 Ödünç Al"
+                    BackgroundColor="#FF6F00" TextColor="White"
+                    CornerRadius="10" FontSize="16" FontAttributes="Bold"
+                    Clicked="BorrowThis_Clicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
