@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.AddEditBookPage"
+             Title="AddEditBookPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label x:Name="PageTitleLabel"
+                   Text="➕ Yeni Kitap Ekle"
+                   FontAttributes="Bold"
+                   FontSize="20" />
+
+            <Label x:Name="ErrorLabel"
+                   TextColor="Red"
+                   IsVisible="False" />
+
+            <Entry x:Name="TitleEntry" Placeholder="Kitap adı" />
+            <Entry x:Name="AuthorEntry" Placeholder="Yazar" />
+            <Entry x:Name="IsbnEntry" Placeholder="ISBN" />
+
+            <Picker x:Name="CategoryPicker" Title="Kategori" />
+
+            <Entry x:Name="PageEntry" Placeholder="Sayfa sayısı" Keyboard="Numeric" />
+            <Entry x:Name="YearEntry" Placeholder="Yayın yılı" Keyboard="Numeric" />
+            <Entry x:Name="PublisherEntry" Placeholder="Yayınevi" />
+            <Editor x:Name="DescEditor" Placeholder="Açıklama" AutoSize="TextChanges" />
+
+            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                <Label Text="Mevcut" VerticalOptions="Center" />
+                <CheckBox x:Name="IsAvailableCheckBox" IsChecked="True" />
+            </HorizontalStackLayout>
+
+            <Button Text="Kaydet"
+                    Clicked="Save_Clicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

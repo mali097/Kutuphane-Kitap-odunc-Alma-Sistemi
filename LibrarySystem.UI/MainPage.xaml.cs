@@ -2,7 +2,7 @@
 
 public partial class MainPage : ContentPage
 {
-    private readonly List<Book> books = new();
+    private readonly List<SimpleBook> books = new();
 
     public MainPage()
     {
@@ -20,7 +20,7 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        books.Add(new Book
+        books.Add(new SimpleBook
         {
             Title = title,
             Author = author
@@ -34,7 +34,7 @@ public partial class MainPage : ContentPage
     }
 }
 
-public class Book
+public class SimpleBook
 {
     public string Title { get; set; } = "";
     public string Author { get; set; } = "";
