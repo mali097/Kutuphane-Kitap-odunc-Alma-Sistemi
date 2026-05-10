@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.UserPanelPage"
+             Title="👤 Profilim">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <!-- Profil kartı -->
+            <Border BackgroundColor="#1565C0" StrokeShape="RoundRectangle 14" Stroke="Transparent" Padding="20">
+                <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                    <Label Text="👤" FontSize="50" HorizontalOptions="Center" />
+                    <Label x:Name="NameLabel" TextColor="White" FontSize="18"
+                           FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label x:Name="UsernameLabel" TextColor="#90CAF9"
+                           FontSize="14" HorizontalOptions="Center" />
+                    <Border BackgroundColor="#FF6F00" StrokeShape="RoundRectangle 20"
+                            Padding="10,4" HorizontalOptions="Center">
+                        <Label x:Name="RoleLabel" TextColor="White" FontSize="12" FontAttributes="Bold" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="🔑 Şifre Değiştir" BackgroundColor="#00897B" TextColor="White"
+                    CornerRadius="10" Clicked="ChangePass_Clicked" />
+
+            <!-- Aktif ödünçler -->
+            <Label Text="📖 Aktif Ödünçlerim" FontAttributes="Bold"
+                   FontSize="16" TextColor="#1565C0" />
+            <CollectionView x:Name="ActiveBorrows" EmptyView="Aktif ödünç kitap yok.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,4" Padding="12" BackgroundColor="#E3F2FD"
+                                StrokeShape="RoundRectangle 10" Stroke="#90CAF9">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0">
+                                    <Label Text="{Binding BookTitle}" FontAttributes="Bold" TextColor="#1A237E" />
+                                    <Label Text="{Binding BorrowDate, StringFormat='Alındı: {0:dd.MM.yyyy}'}"
+                                           TextColor="Gray" FontSize="12" />
+                                    <Label Text="{Binding DueDate, StringFormat='Son iade: {0:dd.MM.yyyy}'}"
+                                           TextColor="#E65100" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text="{Binding Status}"
+                                       VerticalOptions="Center" FontSize="12" FontAttributes="Bold" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Geçmiş ödünçler -->
+            <Label Text="📋 Geçmiş" FontAttributes="Bold"
+                   FontSize="16" TextColor="#1565C0" Margin="0,10,0,0" />
+            <CollectionView x:Name="HistoryBorrows" EmptyView="Geçmiş kayıt yok.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,4" Padding="12" BackgroundColor="#F5F5F5"
+                                StrokeShape="RoundRectangle 10" Stroke="#E0E0E0">
+                            <VerticalStackLayout>
+                                <Label Text="{Binding BookTitle}" FontAttributes="Bold" TextColor="#455A64" />
+                                <Label Text="{Binding ReturnDate, StringFormat='İade: {0:dd.MM.yyyy}'}"
+                                       TextColor="Green" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

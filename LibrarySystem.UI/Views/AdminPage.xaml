@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.AdminPage"
+             Title="👑 Admin Paneli">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <!-- Admin hoşgeldin -->
+            <Border BackgroundColor="#212121" StrokeShape="RoundRectangle 14" Padding="20">
+                <VerticalStackLayout>
+                    <Label Text="👑 Admin Paneli" TextColor="#FFD700"
+                           FontSize="22" FontAttributes="Bold" />
+                    <Label x:Name="AdminNameLabel" TextColor="White" FontSize="14" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Hızlı işlemler -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                <Button Grid.Row="0" Grid.Column="0" Text="➕ Kitap Ekle"
+                        BackgroundColor="#4CAF50" TextColor="White" CornerRadius="10"
+                        Clicked="AddBook_Clicked" />
+                <Button Grid.Row="0" Grid.Column="1" Text="📚 Kitap Listesi"
+                        BackgroundColor="#1565C0" TextColor="White" CornerRadius="10"
+                        Clicked="BookList_Clicked" />
+                <Button Grid.Row="1" Grid.Column="0" Text="⚠️ Gecikmeler"
+                        BackgroundColor="#EF5350" TextColor="White" CornerRadius="10"
+                        Clicked="Overdue_Clicked" />
+                <Button Grid.Row="1" Grid.Column="1" Text="🚪 Çıkış"
+                        BackgroundColor="#757575" TextColor="White" CornerRadius="10"
+                        Clicked="Logout_Clicked" />
+            </Grid>
+
+            <!-- Kullanıcı listesi -->
+            <Label Text="👥 Kayıtlı Kullanıcılar" FontAttributes="Bold"
+                   FontSize="16" TextColor="#1565C0" />
+            <CollectionView x:Name="UsersList" EmptyView="Kullanıcı bulunamadı.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,4" Padding="12" BackgroundColor="#F5F5F5"
+                                StrokeShape="RoundRectangle 10" Stroke="#E0E0E0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0">
+                                    <Label Text="{Binding FullName}" FontAttributes="Bold" TextColor="#1A237E" />
+                                    <Label Text="{Binding Username, StringFormat='@{0}'}" TextColor="Gray" FontSize="13" />
+                                    <Label Text="{Binding Role}" TextColor="#FF6F00" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" Text="🗑️"
+                                        BackgroundColor="Transparent" FontSize="20"
+                                        CommandParameter="{Binding .}"
+                                        Clicked="DeleteUser_Clicked" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

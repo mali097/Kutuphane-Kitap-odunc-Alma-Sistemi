@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:conv="clr-namespace:LibrarySystem.UI.Converters"
+             x:Class="LibrarySystem.UI.Views.MainPage"
+             Title="Ana Sayfa"
+             BackgroundColor="#141624">
+
+    <ContentPage.Resources>
+        <conv:BoolToStatusTextConverter x:Key="StatusText" />
+        <conv:BoolToStatusColorConverter x:Key="StatusColor" />
+        <conv:BoolToColorConverter x:Key="BgColor" />
+        <conv:BoolToFavoriteIconConverter x:Key="FavIcon" />
+
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Header (gradient) -->
+        <Grid Grid.Row="0" Padding="14,14,14,10" Background="{StaticResource HeaderGradient}"
+              ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="12">
+
+            <Button Grid.Row="0" Grid.Column="0"
+                    Text="☰"
+                    FontSize="18"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    Clicked="Hamburger_Clicked" />
+
+            <Border Grid.Row="0" Grid.Column="1"
+                    Stroke="#FFFFFF33"
+                    BackgroundColor="#00000022"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="10,6">
+                <VerticalStackLayout Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                        <Label Text="🔎" TextColor="White" VerticalOptions="Center" />
+                        <SearchBar x:Name="KitapSearchBar"
+                                   Grid.Column="1"
+                                   Placeholder="Arama motoru ve filtreleme"
+                                   TextColor="White"
+                                   PlaceholderColor="#DADADA"
+                                   BackgroundColor="Transparent"
+                                   CancelButtonColor="White"
+                                   TextChanged="SearchBar_TextChanged" />
+                        <Button Grid.Column="2"
+                                Text="⚙"
+                                FontSize="16"
+                                BackgroundColor="Transparent"
+                                TextColor="White"
+                                Clicked="Filter_Clicked" />
+                    </Grid>
+
+                    <Picker x:Name="CategoryPicker"
+                            Title="Kategori (Tümü)"
+                            TextColor="White"
+                            TitleColor="#DADADA"
+                            BackgroundColor="Transparent"
+                            SelectedIndexChanged="CategoryPicker_SelectedIndexChanged">
+                        <Picker.Items>
+                            <x:String>Tümü</x:String>
+                            <x:String>Roman</x:String>
+                            <x:String>Bilim</x:String>
+                            <x:String>Tarih</x:String>
+                            <x:String>Teknoloji</x:String>
+                            <x:String>Felsefe</x:String>
+                            <x:String>Çocuk</x:String>
+                            <x:String>Biyografi</x:String>
+                        </Picker.Items>
+                    </Picker>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="2"
+                    BackgroundColor="#5B4CCF"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="10,8">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Border WidthRequest="26" HeightRequest="26" StrokeShape="RoundRectangle 13" BackgroundColor="#FFFFFF33">
+                        <Label Text="👤" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="Profil" TextColor="White" FontAttributes="Bold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="Profile_Clicked" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="3"
+                    BackgroundColor="#FFFFFF33"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="10,8">
+                <Label Text="🔔" TextColor="White" FontSize="18" />
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="Notifications_Clicked" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <Label x:Name="WelcomeLabel"
+                   Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"
+                   Text=""
+                   TextColor="White"
+                   FontAttributes="Bold"
+                   FontSize="14" />
+        </Grid>
+
+        <!-- Body -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14" Spacing="14">
+
+                <!-- Two cards -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
+                    <!-- Left: authors opinions -->
+                    <Border Grid.Column="0"
+                            BackgroundColor="#7FC0FF33"
+                            Stroke="#7FC0FF66"
+                            StrokeShape="RoundRectangle 18"
+                            Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                                <Border WidthRequest="30" HeightRequest="30"
+                                        BackgroundColor="#6E5BFF"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="👥" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White"/>
+                                </Border>
+                                <Label Grid.Column="1"
+                                       Text="Yazarların görüşleri, önerileri, fikirleri"
+                                       TextColor="White"
+                                       FontAttributes="Bold"
+                                       FontSize="12"
+                                       Margin="10,0,0,0" />
+                                <Button Grid.Column="2"
+                                        Text="Tümünü Gör"
+                                        FontSize="11"
+                                        BackgroundColor="Transparent"
+                                        TextColor="#D7DEFF"
+                                        Clicked="ViewAllQuotes_Clicked" />
+                            </Grid>
+
+                            <CollectionView x:Name="QuotesCollection"
+                                            ItemsLayout="VerticalList"
+                                            SelectionMode="None"
+                                            HeightRequest="350">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BackgroundColor="#FFFFFFE6"
+                                                Stroke="#FFFFFF33"
+                                                StrokeShape="RoundRectangle 14"
+                                                Padding="12"
+                                                Margin="0,6,0,0">
+                                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                                                <Border WidthRequest="40" HeightRequest="40"
+                                                        StrokeShape="RoundRectangle 20"
+                                                        BackgroundColor="#0B0F1A">
+                                                    <Label Text="👤" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                                </Border>
+                                                <Label Grid.Column="1"
+                                                       Text="{Binding Author}"
+                                                       FontAttributes="Bold"
+                                                       TextColor="#1B1F2A"
+                                                       Margin="10,0,0,0"/>
+                                                <Label Grid.Row="1" Grid.Column="1"
+                                                       Text="{Binding Text}"
+                                                       TextColor="#2E3440"
+                                                       FontSize="12"
+                                                       Margin="10,4,0,0"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Right: most read -->
+                    <Border Grid.Column="1"
+                            BackgroundColor="#FFD46B33"
+                            Stroke="#FFD46B66"
+                            StrokeShape="RoundRectangle 18"
+                            Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                                <Border WidthRequest="30" HeightRequest="30"
+                                        BackgroundColor="#F2B33A"
+                                        StrokeShape="RoundRectangle 10">
+                                    <Label Text="🏆" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White"/>
+                                </Border>
+                                <Label Grid.Column="1"
+                                       Text="En çok okunan kitaplar"
+                                       TextColor="White"
+                                       FontAttributes="Bold"
+                                       FontSize="12"
+                                       Margin="10,0,0,0" />
+                                <Button Grid.Column="2"
+                                        Text="Tümünü Gör"
+                                        FontSize="11"
+                                        BackgroundColor="Transparent"
+                                        TextColor="#FFF3D0"
+                                        Clicked="ViewAllPopular_Clicked" />
+                            </Grid>
+
+                            <CollectionView x:Name="PopularCollection"
+                                            ItemsLayout="VerticalList"
+                                            SelectionMode="None"
+                                            HeightRequest="430">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BackgroundColor="{Binding RowColor}"
+                                                Stroke="#FFFFFF33"
+                                                StrokeShape="RoundRectangle 14"
+                                                Padding="12"
+                                                Margin="0,6,0,0">
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+                                                <Border WidthRequest="26" HeightRequest="26"
+                                                        StrokeShape="RoundRectangle 13"
+                                                        BackgroundColor="#00000022">
+                                                    <Label Text="{Binding Rank}"
+                                                           TextColor="White"
+                                                           FontAttributes="Bold"
+                                                           HorizontalOptions="Center"
+                                                           VerticalOptions="Center"/>
+                                                </Border>
+                                                <Border Grid.Column="1"
+                                                        WidthRequest="46" HeightRequest="60"
+                                                        StrokeShape="RoundRectangle 10"
+                                                        BackgroundColor="#00000022">
+                                                    <Label Text="📕" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" />
+                                                </Border>
+                                                <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                                    <Label Text="{Binding Title}" TextColor="White" FontAttributes="Bold" FontSize="13" />
+                                                    <Label Text="{Binding Author}" TextColor="#FFFFFFCC" FontSize="11" />
+                                                    <HorizontalStackLayout Spacing="6">
+                                                        <Label Text="★★★★★" TextColor="#FFD76A" FontSize="11" />
+                                                        <Label Text="{Binding Rating}" TextColor="#FFFFFFCC" FontSize="11" />
+                                                    </HorizontalStackLayout>
+                                                </VerticalStackLayout>
+                                                <Border Grid.Column="3"
+                                                        BackgroundColor="#00000033"
+                                                        StrokeShape="RoundRectangle 12"
+                                                        Padding="10,8">
+                                                    <Label Text="🔖" TextColor="White" FontSize="14"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Existing books table (re-using BooksCollectionView) -->
+                <Border BackgroundColor="#2B1B4F"
+                        Stroke="#FFFFFF22"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="14">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="📚 Mevcut Kitaplarım"
+                               TextColor="White"
+                               FontAttributes="Bold"
+                               FontSize="13"/>
+
+                        <Grid ColumnDefinitions="2*,2*,1.5*,Auto" Padding="4,0" ColumnSpacing="10">
+                            <Label Text="KİTAP ADI" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
+                            <Label Grid.Column="1" Text="YAZAR" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
+                            <Label Grid.Column="2" Text="TESLİM TARİHİ" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
+                            <Label Grid.Column="3" Text="DURUM" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                        </Grid>
+
+                        <CollectionView x:Name="BooksCollectionView"
+                                        SelectionMode="Single"
+                                        SelectionChanged="Book_SelectionChanged"
+                                        EmptyView="📭 Kitap bulunamadı."
+                                        ItemsLayout="VerticalList">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BackgroundColor="#00000022"
+                                            Stroke="#FFFFFF14"
+                                            StrokeShape="RoundRectangle 14"
+                                            Padding="10"
+                                            Margin="0,6,0,0">
+                                        <Grid ColumnDefinitions="2*,2*,1.5*,Auto" ColumnSpacing="10">
+                                            <Label Text="{Binding Title}"
+                                                   TextColor="White"
+                                                   FontAttributes="Bold"
+                                                   FontSize="12"/>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding Author}"
+                                                   TextColor="#FFFFFFCC"
+                                                   FontSize="12"/>
+                                            <Label Grid.Column="2"
+                                                   Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                                   TextColor="#B7D2FF"
+                                                   FontSize="12"/>
+                                            <Border Grid.Column="3"
+                                                    StrokeShape="RoundRectangle 14"
+                                                    BackgroundColor="#FFFFFFE6"
+                                                    Padding="8,4"
+                                                    HorizontalOptions="End">
+                                                <Label Text="{Binding IsAvailable, Converter={StaticResource StatusText}}"
+                                                       TextColor="{Binding IsAvailable, Converter={StaticResource StatusColor}}"
+                                                       FontSize="10"
+                                                       FontAttributes="Bold"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Bottom tab bar -->
+        <Border Grid.Row="2"
+                BackgroundColor="#F3F3F6"
+                StrokeShape="RoundRectangle 24"
+                Padding="14,10"
+                Margin="14,8,14,14">
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Button Grid.Column="0"
+                        Text="🏠&#10;Ana Sayfa"
+                        BackgroundColor="#FFFFFF"
+                        TextColor="#2B1B4F"
+                        CornerRadius="18"
+                        FontSize="11"
+                        Clicked="TabHome_Clicked" />
+                <Button Grid.Column="1"
+                        Text="🗂️&#10;Kategoriler"
+                        BackgroundColor="Transparent"
+                        TextColor="#6C6F7A"
+                        FontSize="11"
+                        Clicked="TabCategories_Clicked" />
+                <Button Grid.Column="2"
+                        Text="🔖&#10;Favorilerim"
+                        BackgroundColor="Transparent"
+                        TextColor="#6C6F7A"
+                        FontSize="11"
+                        Clicked="Favorites_Clicked" />
+                <Button Grid.Column="3"
+                        Text="🕘&#10;Geçmişim"
+                        BackgroundColor="Transparent"
+                        TextColor="#6C6F7A"
+                        FontSize="11"
+                        Clicked="TabHistory_Clicked" />
+                <Button Grid.Column="4"
+                        Text="⚙️&#10;Ayarlar"
+                        BackgroundColor="Transparent"
+                        TextColor="#6C6F7A"
+                        FontSize="11"
+                        Clicked="ThemeToggle_Clicked" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>
