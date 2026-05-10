@@ -53,7 +53,7 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
 // - list books
 // - view book details
 // - borrow books
-// - self register (Student/Author)
+// - self register (default Student)
 
 app.MapPost("/api/users/register", async (
     CreateUserRequest request,
@@ -66,14 +66,13 @@ app.MapPost("/api/users/register", async (
         return Results.ValidationProblem(validationErrors);
     }
 
-    var role = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim();
     var createRequest = new CreateUserRequest
     {
         FirstName = request.FirstName,
         LastName = request.LastName,
         Email = request.Email,
         PasswordHash = request.PasswordHash,
-        Role = role
+        Role = "Student"
     };
 
     var newUserId = await userService.AddAsync(createRequest, actorUserId: 0, cancellationToken);
@@ -108,8 +107,7 @@ app.MapPost("/api/auth/logout", async (UserLogoutRequest request, IAuthService a
         : Results.BadRequest(new { Message = "Session token is invalid." });
 });
 
-app.MapPost("/api/users/{id:int}/change-password", async (
-    int id,
+app.MapPost("/api/auth/change-password", async (
     ChangePasswordRequest request,
     IAuthService authService,
     CancellationToken cancellationToken) =>
@@ -120,10 +118,10 @@ app.MapPost("/api/users/{id:int}/change-password", async (
         return Results.ValidationProblem(validationErrors);
     }
 
-    var isChanged = await authService.ChangePasswordAsync(id, request, cancellationToken);
+    var isChanged = await authService.ChangePasswordAsync(request, cancellationToken);
     return isChanged
         ? Results.Ok(new { Message = "Password changed." })
-        : Results.BadRequest(new { Message = "Current password is invalid or user not found." });
+        : Results.BadRequest(new { Message = "Email or current password is invalid." });
 });
 
 app.MapPost("/api/admin/bootstrap", async (
@@ -628,16 +626,7 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
 
 static Dictionary<string, string[]> ValidateSelfRegisterUserRequest(CreateUserRequest request)
 {
-    var errors = ValidateCreateUserRequest(request);
-    var normalizedRole = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim();
-
-    if (!string.Equals(normalizedRole, "Student", StringComparison.OrdinalIgnoreCase)
-        && !string.Equals(normalizedRole, "Author", StringComparison.OrdinalIgnoreCase))
-    {
-        errors["role"] = ["Role can only be Student or Author for self registration."];
-    }
-
-    return errors;
+    return ValidateCreateUserRequest(request);
 }
 
 static Dictionary<string, string[]> ValidateCreateWeeklyRecommendationRequest(CreateWeeklyRecommendationRequest request)
@@ -727,6 +716,15 @@ static Dictionary<string, string[]> ValidateLogoutRequest(UserLogoutRequest requ
 static Dictionary<string, string[]> ValidateChangePasswordRequest(ChangePasswordRequest request)
 {
     var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+    else if (request.Email.Trim().Length > 150)
+    {
+        errors["email"] = ["Email cannot be longer than 150 characters."];
+    }
 
     if (string.IsNullOrWhiteSpace(request.CurrentPassword))
     {

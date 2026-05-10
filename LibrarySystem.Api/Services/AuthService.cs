@@ -87,10 +87,11 @@ public sealed class AuthService : IAuthService
         return Task.FromResult(removed);
     }
 
-    public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
     {
+        var normalizedEmail = request.Email.Trim();
         var user = await _context.Users
-            .FirstOrDefaultAsync(item => item.Id == userId && !item.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(item => item.Email == normalizedEmail && !item.IsDeleted, cancellationToken);
 
         if (user is null)
         {
@@ -104,7 +105,7 @@ public sealed class AuthService : IAuthService
         }
 
         user.PasswordHash = ComputeSha256(request.NewPassword);
-        user.UpdatedBy = userId;
+        user.UpdatedBy = user.Id;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
