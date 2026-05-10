@@ -370,32 +370,6 @@ app.MapPost("/api/borrow-records/borrow", async (
         : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
 });
 
-app.MapPost("/api/admin/borrow-records/return", async (
-    ReturnBookRequest request,
-    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
-    HttpContext httpContext,
-    IAuthService authService,
-    IBorrowService borrowService,
-    CancellationToken cancellationToken) =>
-{
-    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
-    if (!authorization.IsAuthorized)
-    {
-        return authorization.ErrorResult!;
-    }
-
-    var validationErrors = ValidateReturnBookRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var isReturned = await borrowService.ReturnBookAsync(request, authorization.AdminUserId ?? 0, cancellationToken);
-    return isReturned
-        ? Results.Ok(new { Message = "Book returned." })
-        : Results.BadRequest(new { Message = "Return action failed. Record not found or already returned." });
-});
-
 app.Run();
 
 static int GetActorUserId(HttpContext context)
