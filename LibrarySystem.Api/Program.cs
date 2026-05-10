@@ -53,6 +53,32 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
 // - list books
 // - view book details
 // - borrow books
+// - self register (Student/Author)
+
+app.MapPost("/api/users/register", async (
+    CreateUserRequest request,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateSelfRegisterUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var role = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim();
+    var createRequest = new CreateUserRequest
+    {
+        FirstName = request.FirstName,
+        LastName = request.LastName,
+        Email = request.Email,
+        PasswordHash = request.PasswordHash,
+        Role = role
+    };
+
+    var newUserId = await userService.AddAsync(createRequest, actorUserId: 0, cancellationToken);
+    return Results.Created($"/api/users/{newUserId}", new { Message = "User registered successfully.", UserId = newUserId });
+});
 
 app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
 {
@@ -208,50 +234,6 @@ app.MapGet("/api/admin/users", async (
 
     var users = await userService.GetAllAsync(cancellationToken);
     return Results.Ok(users.Select(MapUserToResponse));
-});
-
-app.MapPost("/api/admin/users", async (
-    CreateUserRequest request,
-    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
-    HttpContext httpContext,
-    IAuthService authService,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
-    if (!authorization.IsAuthorized)
-    {
-        return authorization.ErrorResult!;
-    }
-
-    var validationErrors = ValidateCreateUserRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var newUserId = await userService.AddAsync(request, authorization.AdminUserId, cancellationToken);
-    return Results.Created($"/api/users/{newUserId}", new { Message = "User added by admin.", UserId = newUserId });
-});
-
-app.MapDelete("/api/admin/users/{id:int}", async (
-    int id,
-    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
-    HttpContext httpContext,
-    IAuthService authService,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
-    if (!authorization.IsAuthorized)
-    {
-        return authorization.ErrorResult!;
-    }
-
-    var isDeleted = await userService.DeleteAsync(id, authorization.AdminUserId, cancellationToken);
-    return isDeleted
-        ? Results.Ok(new { Message = "User deleted by admin." })
-        : Results.NotFound(new { Message = "User not found." });
 });
 
 app.MapPost("/api/admin/books", async (
@@ -665,6 +647,20 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
     else if (request.PasswordHash.Trim().Length < 6)
     {
         errors["passwordHash"] = ["Password must be at least 6 characters."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateSelfRegisterUserRequest(CreateUserRequest request)
+{
+    var errors = ValidateCreateUserRequest(request);
+    var normalizedRole = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim();
+
+    if (!string.Equals(normalizedRole, "Student", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(normalizedRole, "Author", StringComparison.OrdinalIgnoreCase))
+    {
+        errors["role"] = ["Role can only be Student or Author for self registration."];
     }
 
     return errors;
