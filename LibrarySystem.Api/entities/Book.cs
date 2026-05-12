@@ -12,5 +12,6 @@ namespace LibrarySystem.Api.Entities
         public bool IsAvailable { get; set; } = true;
 
         public ICollection<BorrowRecord>? BorrowRecords { get; set; }
+        public ICollection<BookRating>? BookRatings { get; set; }
     }
 }
