@@ -6,8 +6,8 @@ namespace LibrarySystem.UI;
 public partial class MainPage : ContentPage
 {
     private readonly HttpClient _httpClient;
-    private readonly ObservableCollection<BookCardModel> _books = [];
-    private readonly ObservableCollection<WeeklyRecommendationModel> _recommendations = [];
+    private readonly ObservableCollection<BookCardModel> _books = new();
+    private readonly ObservableCollection<WeeklyRecommendationModel> _recommendations = new();
 
     public MainPage()
     {
@@ -69,7 +69,8 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            var books = await _httpClient.GetFromJsonAsync<List<BookApiResponse>>("/api/books") ?? [];
+            var books = await _httpClient.GetFromJsonAsync<List<BookApiResponse>>("/api/books")
+                ?? new List<BookApiResponse>();
             _books.Clear();
             foreach (var book in books)
             {
@@ -96,7 +97,8 @@ public partial class MainPage : ContentPage
         try
         {
             var recommendations = await _httpClient
-                .GetFromJsonAsync<List<WeeklyRecommendationApiResponse>>("/api/recommendations/weekly") ?? [];
+                .GetFromJsonAsync<List<WeeklyRecommendationApiResponse>>("/api/recommendations/weekly")
+                ?? new List<WeeklyRecommendationApiResponse>();
 
             _recommendations.Clear();
             foreach (var recommendation in recommendations)
