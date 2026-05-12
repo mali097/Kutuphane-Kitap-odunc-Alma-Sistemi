@@ -1,11 +1,14 @@
 using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
-using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 const string ActorUserIdHeader = "X-Actor-User-Id";
+const string AdminSetupKeyHeader = "X-Admin-Setup-Key";
+const string AdminTokenHeader = "X-Admin-Token";
+const string AuthorTokenHeader = "X-Author-Token";
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<LibraryDbContext>(options =>
@@ -14,6 +17,7 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBorrowService, BorrowService>();
+builder.Services.AddScoped<IWeeklyRecommendationService, WeeklyRecommendationService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -28,7 +32,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-<<<<<<< HEAD
 app.MapGet("/api/books", async (
     [AsParameters] GetBooksQuery query,
     IBookService bookService,
@@ -36,12 +39,6 @@ app.MapGet("/api/books", async (
 {
     var books = await bookService.GetAllBooksAsync(query, cancellationToken);
     return Results.Ok(books.Select(MapBookToResponse));
-=======
-app.MapGet("/api/books", async (IBookService bookService, CancellationToken cancellationToken) =>
-{
-    var books = await bookService.GetAllBooksAsync(cancellationToken);
-    return Results.Ok(books.Select(MapToResponse));
->>>>>>> origin/main
 });
 
 app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
@@ -49,152 +46,37 @@ app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, Cance
     var book = await bookService.GetBookByIdAsync(id, cancellationToken);
     return book is null
         ? Results.NotFound(new { Message = "Book not found." })
-<<<<<<< HEAD
         : Results.Ok(MapBookToResponse(book));
 });
 
-app.MapPost("/api/books", async (
-    CreateBookRequest request,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-=======
-        : Results.Ok(MapToResponse(book));
-});
+// Public user capabilities:
+// - list books
+// - view book details
+// - borrow books
+// - self register (default Student)
 
-app.MapPost("/api/books", async (CreateBookRequest request, IBookService bookService, CancellationToken cancellationToken) =>
->>>>>>> origin/main
+app.MapPost("/api/users/register", async (
+    CreateUserRequest request,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
 {
-    var validationErrors = ValidateCreateBookRequest(request);
+    var validationErrors = ValidateSelfRegisterUserRequest(request);
     if (validationErrors.Count != 0)
     {
         return Results.ValidationProblem(validationErrors);
     }
 
-<<<<<<< HEAD
-    var actorUserId = GetActorUserId(httpContext);
-=======
->>>>>>> origin/main
-    var newBook = new Book
+    var createRequest = new CreateUserRequest
     {
-        Title = request.Title,
-        Author = request.Author,
-        Isbn = request.Isbn,
-        Genre = request.Genre,
-        PublishYear = request.PublishYear,
-        IsAvailable = request.IsAvailable
+        FirstName = request.FirstName,
+        LastName = request.LastName,
+        Email = request.Email,
+        PasswordHash = request.PasswordHash,
+        Role = "Student"
     };
 
-<<<<<<< HEAD
-    var newId = await bookService.AddBookAsync(newBook, actorUserId, cancellationToken);
-    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
-});
-
-app.MapPut("/api/books/{id:int}", async (
-    int id,
-    UpdateBookRequest request,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateUpdateBookRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var isUpdated = await bookService.UpdateBookAsync(id, request, actorUserId, cancellationToken);
-    return isUpdated
-        ? Results.Ok(new { Message = "Book updated." })
-        : Results.NotFound(new { Message = "Book not found." });
-});
-
-app.MapDelete("/api/books/{id:int}", async (
-    int id,
-    HttpContext httpContext,
-    IBookService bookService,
-    CancellationToken cancellationToken) =>
-{
-    var actorUserId = GetActorUserId(httpContext);
-    var isDeleted = await bookService.DeleteBookAsync(id, actorUserId, cancellationToken);
-=======
-    var newId = await bookService.AddBookAsync(newBook, cancellationToken);
-    return Results.Created($"/api/books/{newId}", new { Message = "Book added successfully.", BookId = newId });
-});
-
-app.MapDelete("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
-{
-    var isDeleted = await bookService.DeleteBookAsync(id, cancellationToken);
->>>>>>> origin/main
-    return isDeleted
-        ? Results.Ok(new { Message = "Book deleted." })
-        : Results.NotFound(new { Message = "Book not found." });
-});
-<<<<<<< HEAD
-
-app.MapGet("/api/users", async (IUserService userService, CancellationToken cancellationToken) =>
-{
-    var users = await userService.GetAllAsync(cancellationToken);
-    return Results.Ok(users.Select(MapUserToResponse));
-});
-
-app.MapGet("/api/users/{id:int}", async (int id, IUserService userService, CancellationToken cancellationToken) =>
-{
-    var user = await userService.GetByIdAsync(id, cancellationToken);
-    return user is null
-        ? Results.NotFound(new { Message = "User not found." })
-        : Results.Ok(MapUserToResponse(user));
-});
-
-app.MapPost("/api/users", async (
-    CreateUserRequest request,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateCreateUserRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var newUserId = await userService.AddAsync(request, actorUserId, cancellationToken);
-    return Results.Created($"/api/users/{newUserId}", new { Message = "User added successfully.", UserId = newUserId });
-});
-
-app.MapPut("/api/users/{id:int}", async (
-    int id,
-    UpdateUserRequest request,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateUpdateUserRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var isUpdated = await userService.UpdateAsync(id, request, actorUserId, cancellationToken);
-    return isUpdated
-        ? Results.Ok(new { Message = "User updated." })
-        : Results.NotFound(new { Message = "User not found." });
-});
-
-app.MapDelete("/api/users/{id:int}", async (
-    int id,
-    HttpContext httpContext,
-    IUserService userService,
-    CancellationToken cancellationToken) =>
-{
-    var actorUserId = GetActorUserId(httpContext);
-    var isDeleted = await userService.DeleteAsync(id, actorUserId, cancellationToken);
-    return isDeleted
-        ? Results.Ok(new { Message = "User deleted." })
-        : Results.NotFound(new { Message = "User not found." });
+    var newUserId = await userService.AddAsync(createRequest, actorUserId: 0, cancellationToken);
+    return Results.Created($"/api/users/{newUserId}", new { Message = "User registered successfully.", UserId = newUserId });
 });
 
 app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
@@ -225,8 +107,7 @@ app.MapPost("/api/auth/logout", async (UserLogoutRequest request, IAuthService a
         : Results.BadRequest(new { Message = "Session token is invalid." });
 });
 
-app.MapPost("/api/users/{id:int}/change-password", async (
-    int id,
+app.MapPost("/api/auth/change-password", async (
     ChangePasswordRequest request,
     IAuthService authService,
     CancellationToken cancellationToken) =>
@@ -237,21 +118,235 @@ app.MapPost("/api/users/{id:int}/change-password", async (
         return Results.ValidationProblem(validationErrors);
     }
 
-    var isChanged = await authService.ChangePasswordAsync(id, request, cancellationToken);
+    var isChanged = await authService.ChangePasswordAsync(request, cancellationToken);
     return isChanged
         ? Results.Ok(new { Message = "Password changed." })
-        : Results.BadRequest(new { Message = "Current password is invalid or user not found." });
+        : Results.BadRequest(new { Message = "Email or current password is invalid." });
 });
 
-app.MapGet("/api/borrow-records", async (
-    int? userId,
-    int? bookId,
-    bool? isReturned,
+app.MapPost("/api/admin/bootstrap", async (
+    AdminBootstrapRequest request,
+    [FromHeader(Name = AdminSetupKeyHeader)] string? adminSetupKey,
+    IConfiguration configuration,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var configuredSetupKey = configuration["AdminBootstrapKey"];
+    if (string.IsNullOrWhiteSpace(configuredSetupKey))
+    {
+        return Results.Problem("Admin bootstrap key is not configured.");
+    }
+
+    if (string.IsNullOrWhiteSpace(adminSetupKey)
+        || !string.Equals(adminSetupKey.Trim(), configuredSetupKey, StringComparison.Ordinal))
+    {
+        return Results.Unauthorized();
+    }
+
+    if (await userService.AdminExistsAsync(cancellationToken))
+    {
+        return Results.Conflict(new { Message = "An admin user already exists." });
+    }
+
+    var validationErrors = ValidateAdminBootstrapRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var createAdminRequest = new CreateUserRequest
+    {
+        FirstName = request.FirstName,
+        LastName = request.LastName,
+        Email = request.Email,
+        PasswordHash = request.Password,
+        Role = "Admin"
+    };
+
+    var adminUserId = await userService.AddAsync(createAdminRequest, actorUserId: 0, cancellationToken);
+    return Results.Created($"/api/users/{adminUserId}", new { Message = "Admin created.", UserId = adminUserId });
+});
+
+app.MapPost("/api/admin/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
+{
+    var validationErrors = ValidateLoginRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var response = await authService.LoginAdminAsync(request, cancellationToken);
+    return response is null
+        ? Results.BadRequest(new { Message = "Invalid admin credentials." })
+        : Results.Ok(response);
+});
+
+app.MapPost("/api/author/recommendations", async (
+    CreateWeeklyRecommendationRequest request,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IWeeklyRecommendationService recommendationService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthorAsync(authorToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateWeeklyRecommendationRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var recommendation = await recommendationService.AddRecommendationAsync(
+        authorization.AdminUserId ?? 0,
+        request,
+        cancellationToken);
+
+    return Results.Created($"/api/recommendations/weekly/{recommendation.RecommendationId}", recommendation);
+});
+
+app.MapGet("/api/recommendations/weekly", async (
+    IWeeklyRecommendationService recommendationService,
+    CancellationToken cancellationToken) =>
+{
+    var recommendations = await recommendationService.GetCurrentWeekRecommendationsAsync(cancellationToken);
+    return Results.Ok(recommendations);
+});
+
+app.MapGet("/api/admin/users", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var users = await userService.GetAllAsync(cancellationToken);
+    return Results.Ok(users.Select(MapUserToResponse));
+});
+
+app.MapPost("/api/admin/books", async (
+    CreateBookRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var newBook = new Book
+    {
+        Title = request.Title,
+        Author = request.Author,
+        Isbn = request.Isbn,
+        Genre = request.Genre,
+        PublishYear = request.PublishYear,
+        IsAvailable = request.IsAvailable
+    };
+
+    var newBookId = await bookService.AddBookAsync(newBook, authorization.AdminUserId, cancellationToken);
+    return Results.Created($"/api/books/{newBookId}", new { Message = "Book added by admin.", BookId = newBookId });
+});
+
+app.MapPut("/api/admin/books/{id:int}", async (
+    int id,
+    UpdateBookRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateUpdateBookRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var isUpdated = await bookService.UpdateBookAsync(id, request, authorization.AdminUserId, cancellationToken);
+    return isUpdated
+        ? Results.Ok(new { Message = "Book updated by admin." })
+        : Results.NotFound(new { Message = "Book not found." });
+});
+
+app.MapDelete("/api/admin/books/{id:int}", async (
+    int id,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var isDeleted = await bookService.DeleteBookAsync(id, authorization.AdminUserId, cancellationToken);
+    return isDeleted
+        ? Results.Ok(new { Message = "Book deleted by admin." })
+        : Results.NotFound(new { Message = "Book not found." });
+});
+
+app.MapGet("/api/admin/borrow-records", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
     IBorrowService borrowService,
     CancellationToken cancellationToken) =>
 {
-    var records = await borrowService.GetBorrowRecordsAsync(userId, bookId, isReturned, cancellationToken);
-    return Results.Ok(records.Select(MapBorrowRecordToResponse));
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetAllBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapAdminBorrowRecordToResponse));
+});
+
+app.MapGet("/api/admin/borrow-records/active", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetActiveBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapAdminBorrowRecordToResponse));
 });
 
 app.MapPost("/api/borrow-records/borrow", async (
@@ -273,25 +368,6 @@ app.MapPost("/api/borrow-records/borrow", async (
         : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
 });
 
-app.MapPost("/api/borrow-records/return", async (
-    ReturnBookRequest request,
-    HttpContext httpContext,
-    IBorrowService borrowService,
-    CancellationToken cancellationToken) =>
-{
-    var validationErrors = ValidateReturnBookRequest(request);
-    if (validationErrors.Count != 0)
-    {
-        return Results.ValidationProblem(validationErrors);
-    }
-
-    var actorUserId = GetActorUserId(httpContext);
-    var isReturned = await borrowService.ReturnBookAsync(request, actorUserId, cancellationToken);
-    return isReturned
-        ? Results.Ok(new { Message = "Book returned." })
-        : Results.BadRequest(new { Message = "Return action failed. Record not found or already returned." });
-});
-
 app.Run();
 
 static int GetActorUserId(HttpContext context)
@@ -303,8 +379,90 @@ static int GetActorUserId(HttpContext context)
         return parsedId;
     }
 
-    // Default actor id for dev/testing scenarios.
     return 1;
+}
+
+static async Task<AdminAuthorizationResult> AuthorizeAdminAsync(
+    string? adminTokenHeaderValue,
+    HttpContext context,
+    IAuthService authService,
+    CancellationToken cancellationToken)
+{
+    var sessionToken = GetAdminSessionToken(adminTokenHeaderValue, context);
+    if (string.IsNullOrWhiteSpace(sessionToken))
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var userId = await authService.GetUserIdBySessionTokenAsync(sessionToken, cancellationToken);
+    if (!userId.HasValue)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var isAdmin = await authService.IsUserAdminAsync(userId.Value, cancellationToken);
+    if (!isAdmin)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Forbid());
+    }
+
+    return new AdminAuthorizationResult(true, userId.Value, null);
+}
+
+static async Task<AdminAuthorizationResult> AuthorizeAuthorAsync(
+    string? authorTokenHeaderValue,
+    HttpContext context,
+    IAuthService authService,
+    CancellationToken cancellationToken)
+{
+    var sessionToken = GetAdminSessionToken(authorTokenHeaderValue, context);
+    if (string.IsNullOrWhiteSpace(sessionToken))
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var userId = await authService.GetUserIdBySessionTokenAsync(sessionToken, cancellationToken);
+    if (!userId.HasValue)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var isAuthor = await authService.IsUserAuthorAsync(userId.Value, cancellationToken);
+    if (!isAuthor)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Forbid());
+    }
+
+    return new AdminAuthorizationResult(true, userId.Value, null);
+}
+
+static string? GetAdminSessionToken(string? adminTokenHeaderValue, HttpContext context)
+{
+    if (!string.IsNullOrWhiteSpace(adminTokenHeaderValue))
+    {
+        return adminTokenHeaderValue.Trim();
+    }
+
+    if (context.Request.Headers.TryGetValue(AdminTokenHeader, out var values))
+    {
+        var headerValue = values.ToString().Trim();
+        if (!string.IsNullOrWhiteSpace(headerValue))
+        {
+            return headerValue;
+        }
+    }
+
+    if (context.Request.Headers.TryGetValue("Authorization", out var authValues))
+    {
+        var authorization = authValues.ToString().Trim();
+        const string bearerPrefix = "Bearer ";
+        if (authorization.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return authorization[bearerPrefix.Length..].Trim();
+        }
+    }
+
+    return null;
 }
 
 static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest request)
@@ -466,6 +624,67 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
     return errors;
 }
 
+static Dictionary<string, string[]> ValidateSelfRegisterUserRequest(CreateUserRequest request)
+{
+    return ValidateCreateUserRequest(request);
+}
+
+static Dictionary<string, string[]> ValidateCreateWeeklyRecommendationRequest(CreateWeeklyRecommendationRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.BookTitle))
+    {
+        errors["bookTitle"] = ["BookTitle is required."];
+    }
+    else if (request.BookTitle.Trim().Length > 200)
+    {
+        errors["bookTitle"] = ["BookTitle cannot be longer than 200 characters."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Idea))
+    {
+        errors["idea"] = ["Idea is required."];
+    }
+    else if (request.Idea.Trim().Length > 1000)
+    {
+        errors["idea"] = ["Idea cannot be longer than 1000 characters."];
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateAdminBootstrapRequest(AdminBootstrapRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.FirstName))
+    {
+        errors["firstName"] = ["FirstName is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.LastName))
+    {
+        errors["lastName"] = ["LastName is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Password))
+    {
+        errors["password"] = ["Password is required."];
+    }
+    else if (request.Password.Trim().Length < 6)
+    {
+        errors["password"] = ["Password must be at least 6 characters."];
+    }
+
+    return errors;
+}
+
 static Dictionary<string, string[]> ValidateLoginRequest(LoginRequest request)
 {
     var errors = new Dictionary<string, string[]>();
@@ -497,6 +716,15 @@ static Dictionary<string, string[]> ValidateLogoutRequest(UserLogoutRequest requ
 static Dictionary<string, string[]> ValidateChangePasswordRequest(ChangePasswordRequest request)
 {
     var errors = new Dictionary<string, string[]>();
+
+    if (string.IsNullOrWhiteSpace(request.Email))
+    {
+        errors["email"] = ["Email is required."];
+    }
+    else if (request.Email.Trim().Length > 150)
+    {
+        errors["email"] = ["Email cannot be longer than 150 characters."];
+    }
 
     if (string.IsNullOrWhiteSpace(request.CurrentPassword))
     {
@@ -551,44 +779,10 @@ static bool IsInvalidPatchValue(string? value)
         return false;
     }
 
-    var trimmed = value.Trim();
-    return trimmed.Length == 0;
+    return value.Trim().Length == 0;
 }
 
 static BookResponse MapBookToResponse(Book book)
-=======
-
-app.Run();
-
-static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest request)
-{
-    var errors = new Dictionary<string, string[]>();
-
-    if (string.IsNullOrWhiteSpace(request.Title))
-    {
-        errors["title"] = ["Title is required."];
-    }
-
-    if (string.IsNullOrWhiteSpace(request.Author))
-    {
-        errors["author"] = ["Author is required."];
-    }
-
-    if (string.IsNullOrWhiteSpace(request.Isbn))
-    {
-        errors["isbn"] = ["Isbn is required."];
-    }
-
-    if (request.PublishYear < 0 || request.PublishYear > DateTime.UtcNow.Year + 1)
-    {
-        errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
-    }
-
-    return errors;
-}
-
-static BookResponse MapToResponse(Book book)
->>>>>>> origin/main
 {
     return new BookResponse(
         book.Id,
@@ -601,7 +795,6 @@ static BookResponse MapToResponse(Book book)
     );
 }
 
-<<<<<<< HEAD
 static UserResponse MapUserToResponse(User user)
 {
     return new UserResponse(
@@ -626,8 +819,23 @@ static BorrowRecordResponse MapBorrowRecordToResponse(BorrowRecord record)
     );
 }
 
-=======
->>>>>>> origin/main
+static AdminBorrowRecordResponse MapAdminBorrowRecordToResponse(BorrowRecord record)
+{
+    return new AdminBorrowRecordResponse(
+        record.Id,
+        record.UserId,
+        record.User?.FirstName ?? string.Empty,
+        record.User?.LastName ?? string.Empty,
+        record.User?.Email ?? string.Empty,
+        record.BookId,
+        record.Book?.Title ?? string.Empty,
+        record.BorrowDate,
+        record.ExpectedReturnDate,
+        record.ActualReturnDate,
+        record.IsReturned
+    );
+}
+
 internal sealed record BookResponse(
     int Id,
     string Title,
@@ -637,7 +845,6 @@ internal sealed record BookResponse(
     int PublishYear,
     bool IsAvailable
 );
-<<<<<<< HEAD
 
 internal sealed record UserResponse(
     int Id,
@@ -656,5 +863,19 @@ internal sealed record BorrowRecordResponse(
     DateTime? ActualReturnDate,
     bool IsReturned
 );
-=======
->>>>>>> origin/main
+
+internal sealed record AdminBorrowRecordResponse(
+    int BorrowRecordId,
+    int UserId,
+    string UserFirstName,
+    string UserLastName,
+    string UserEmail,
+    int BookId,
+    string BookTitle,
+    DateTime BorrowDate,
+    DateTime ExpectedReturnDate,
+    DateTime? ActualReturnDate,
+    bool IsReturned
+);
+
+internal sealed record AdminAuthorizationResult(bool IsAuthorized, int? AdminUserId, IResult? ErrorResult);
