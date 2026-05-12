@@ -12,6 +12,18 @@ namespace LibrarySystem.Api.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<BorrowRecord> BorrowRecords { get; set; }
+        public DbSet<BookRating> BookRatings { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<BookRating>(entity =>
+            {
+                entity.HasIndex(item => new { item.UserId, item.BookId }).IsUnique();
+                entity.Property(item => item.Score).HasPrecision(3, 1);
+            });
+        }
 
         private void ApplyAuditInformation()
         {

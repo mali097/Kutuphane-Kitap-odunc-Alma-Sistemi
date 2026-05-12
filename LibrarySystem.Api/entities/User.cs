@@ -11,5 +11,6 @@ namespace LibrarySystem.Api.Entities
         public string Role { get; set; } = "Student";
 
         public ICollection<BorrowRecord>? BorrowRecords { get; set; }
+        public ICollection<BookRating>? BookRatings { get; set; }
     }
 }

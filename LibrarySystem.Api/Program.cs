@@ -9,6 +9,7 @@ const string ActorUserIdHeader = "X-Actor-User-Id";
 const string AdminSetupKeyHeader = "X-Admin-Setup-Key";
 const string AdminTokenHeader = "X-Admin-Token";
 const string AuthorTokenHeader = "X-Author-Token";
+const string UserTokenHeader = "X-User-Token";
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<LibraryDbContext>(options =>
@@ -18,6 +19,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBorrowService, BorrowService>();
 builder.Services.AddScoped<IWeeklyRecommendationService, WeeklyRecommendationService>();
+builder.Services.AddScoped<IBookRatingService, BookRatingService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,18 +37,75 @@ app.UseHttpsRedirection();
 app.MapGet("/api/books", async (
     [AsParameters] GetBooksQuery query,
     IBookService bookService,
+    IBookRatingService bookRatingService,
     CancellationToken cancellationToken) =>
 {
     var books = await bookService.GetAllBooksAsync(query, cancellationToken);
-    return Results.Ok(books.Select(MapBookToResponse));
+    var summaries = await bookRatingService.GetBookRatingSummariesAsync(books.Select(item => item.Id), cancellationToken);
+    return Results.Ok(books.Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries))));
 });
 
-app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
+app.MapGet("/api/books/{id:int}", async (
+    int id,
+    IBookService bookService,
+    IBookRatingService bookRatingService,
+    CancellationToken cancellationToken) =>
 {
     var book = await bookService.GetBookByIdAsync(id, cancellationToken);
     return book is null
         ? Results.NotFound(new { Message = "Book not found." })
-        : Results.Ok(MapBookToResponse(book));
+        : Results.Ok(MapBookToResponse(
+            book,
+            await bookRatingService.GetBookRatingSummaryAsync(id, cancellationToken)));
+});
+
+app.MapGet("/api/books/top-rated", async (
+    int? limit,
+    IBookRatingService bookRatingService,
+    CancellationToken cancellationToken) =>
+{
+    var topBooks = await bookRatingService.GetTopRatedBooksAsync(limit ?? 50, cancellationToken);
+    return Results.Ok(topBooks.Select(MapTopRatedBookToResponse));
+});
+
+app.MapPost("/api/books/{bookId:int}/ratings", async (
+    int bookId,
+    CreateBookRatingRequest request,
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBookRatingService bookRatingService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeStudentOrAuthorAsync(userToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateBookRatingRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var ratingResult = await bookRatingService.RateBookAsync(
+        authorization.AdminUserId ?? 0,
+        bookId,
+        request.Score,
+        cancellationToken);
+
+    return ratingResult.IsSuccess
+        ? Results.Ok(new
+        {
+            Message = "Book rating saved.",
+            BookId = bookId,
+            MyRating = request.Score,
+            ratingResult.AverageRating,
+            ratingResult.RatingCount
+        })
+        : Results.BadRequest(new { Message = ratingResult.ErrorMessage ?? "Rating failed." });
 });
 
 // Public user capabilities:
@@ -122,6 +181,24 @@ app.MapPost("/api/auth/change-password", async (
     return isChanged
         ? Results.Ok(new { Message = "Password changed." })
         : Results.BadRequest(new { Message = "Email or current password is invalid." });
+});
+
+app.MapGet("/api/users/me/ratings", async (
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBookRatingService bookRatingService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeStudentOrAuthorAsync(userToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var ratings = await bookRatingService.GetUserRatedBooksAsync(authorization.AdminUserId ?? 0, cancellationToken);
+    return Results.Ok(ratings.Select(MapUserRatedBookToResponse));
 });
 
 app.MapPost("/api/admin/bootstrap", async (
@@ -436,14 +513,59 @@ static async Task<AdminAuthorizationResult> AuthorizeAuthorAsync(
     return new AdminAuthorizationResult(true, userId.Value, null);
 }
 
-static string? GetAdminSessionToken(string? adminTokenHeaderValue, HttpContext context)
+static async Task<AdminAuthorizationResult> AuthorizeStudentOrAuthorAsync(
+    string? userTokenHeaderValue,
+    HttpContext context,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken)
 {
-    if (!string.IsNullOrWhiteSpace(adminTokenHeaderValue))
+    var sessionToken = GetUserSessionToken(userTokenHeaderValue, context);
+    if (string.IsNullOrWhiteSpace(sessionToken))
     {
-        return adminTokenHeaderValue.Trim();
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
     }
 
-    if (context.Request.Headers.TryGetValue(AdminTokenHeader, out var values))
+    var userId = await authService.GetUserIdBySessionTokenAsync(sessionToken, cancellationToken);
+    if (!userId.HasValue)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var user = await userService.GetByIdAsync(userId.Value, cancellationToken);
+    if (user is null)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Unauthorized());
+    }
+
+    var isAllowedRole = string.Equals(user.Role, "Student", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(user.Role, "Author", StringComparison.OrdinalIgnoreCase);
+    if (!isAllowedRole)
+    {
+        return new AdminAuthorizationResult(false, null, Results.Forbid());
+    }
+
+    return new AdminAuthorizationResult(true, userId.Value, null);
+}
+
+static string? GetAdminSessionToken(string? adminTokenHeaderValue, HttpContext context)
+{
+    return GetSessionToken(adminTokenHeaderValue, AdminTokenHeader, context);
+}
+
+static string? GetUserSessionToken(string? userTokenHeaderValue, HttpContext context)
+{
+    return GetSessionToken(userTokenHeaderValue, UserTokenHeader, context);
+}
+
+static string? GetSessionToken(string? tokenHeaderValue, string headerName, HttpContext context)
+{
+    if (!string.IsNullOrWhiteSpace(tokenHeaderValue))
+    {
+        return tokenHeaderValue.Trim();
+    }
+
+    if (context.Request.Headers.TryGetValue(headerName, out var values))
     {
         var headerValue = values.ToString().Trim();
         if (!string.IsNullOrWhiteSpace(headerValue))
@@ -760,6 +882,25 @@ static Dictionary<string, string[]> ValidateBorrowBookRequest(BorrowBookRequest 
     return errors;
 }
 
+static Dictionary<string, string[]> ValidateCreateBookRatingRequest(CreateBookRatingRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (request.Score < 0.5m || request.Score > 5m)
+    {
+        errors["score"] = ["Score must be between 0.5 and 5."];
+        return errors;
+    }
+
+    var halfStep = request.Score * 2m;
+    if (halfStep != decimal.Truncate(halfStep))
+    {
+        errors["score"] = ["Score must be in 0.5 increments (e.g. 3.5, 4.0, 4.5)."];
+    }
+
+    return errors;
+}
+
 static Dictionary<string, string[]> ValidateReturnBookRequest(ReturnBookRequest request)
 {
     var errors = new Dictionary<string, string[]>();
@@ -782,7 +923,14 @@ static bool IsInvalidPatchValue(string? value)
     return value.Trim().Length == 0;
 }
 
-static BookResponse MapBookToResponse(Book book)
+static BookRatingSummary GetBookRatingSummary(int bookId, IReadOnlyDictionary<int, BookRatingSummary> summaries)
+{
+    return summaries.TryGetValue(bookId, out var summary)
+        ? summary
+        : new BookRatingSummary(null, 0);
+}
+
+static BookResponse MapBookToResponse(Book book, BookRatingSummary ratingSummary)
 {
     return new BookResponse(
         book.Id,
@@ -791,7 +939,9 @@ static BookResponse MapBookToResponse(Book book)
         book.Isbn,
         book.Genre,
         book.PublishYear,
-        book.IsAvailable
+        book.IsAvailable,
+        ratingSummary.AverageRating,
+        ratingSummary.RatingCount
     );
 }
 
@@ -836,6 +986,31 @@ static AdminBorrowRecordResponse MapAdminBorrowRecordToResponse(BorrowRecord rec
     );
 }
 
+static UserRatedBookResponse MapUserRatedBookToResponse(UserRatedBookItem item)
+{
+    return new UserRatedBookResponse(
+        item.BookId,
+        item.Title,
+        item.Author,
+        item.Genre,
+        item.MyRating,
+        item.AverageRating,
+        item.RatingCount,
+        item.RatedAt);
+}
+
+static TopRatedBookResponse MapTopRatedBookToResponse(TopRatedBookItem item)
+{
+    return new TopRatedBookResponse(
+        item.BookId,
+        item.Title,
+        item.Author,
+        item.Genre,
+        item.PublishYear,
+        item.AverageRating,
+        item.RatingCount);
+}
+
 internal sealed record BookResponse(
     int Id,
     string Title,
@@ -843,7 +1018,9 @@ internal sealed record BookResponse(
     string Isbn,
     string Genre,
     int PublishYear,
-    bool IsAvailable
+    bool IsAvailable,
+    decimal? AverageRating,
+    int RatingCount
 );
 
 internal sealed record UserResponse(
@@ -876,6 +1053,27 @@ internal sealed record AdminBorrowRecordResponse(
     DateTime ExpectedReturnDate,
     DateTime? ActualReturnDate,
     bool IsReturned
+);
+
+internal sealed record UserRatedBookResponse(
+    int BookId,
+    string Title,
+    string Author,
+    string Genre,
+    decimal MyRating,
+    decimal? AverageRating,
+    int RatingCount,
+    DateTime RatedAt
+);
+
+internal sealed record TopRatedBookResponse(
+    int BookId,
+    string Title,
+    string Author,
+    string Genre,
+    int PublishYear,
+    decimal AverageRating,
+    int RatingCount
 );
 
 internal sealed record AdminAuthorizationResult(bool IsAuthorized, int? AdminUserId, IResult? ErrorResult);

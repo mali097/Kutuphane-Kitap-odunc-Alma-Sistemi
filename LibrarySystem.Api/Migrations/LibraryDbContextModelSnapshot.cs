@@ -122,6 +122,49 @@ namespace LibrarySystem.Api.Migrations
                     b.ToTable("BorrowRecords");
                 });
 
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Score")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("decimal(3,1)");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("BookRatings");
+                });
+
             modelBuilder.Entity("LibrarySystem.Api.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -189,14 +232,35 @@ namespace LibrarySystem.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookRating", b =>
+                {
+                    b.HasOne("LibrarySystem.Api.Entities.Book", "Book")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibrarySystem.Api.Entities.User", "User")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LibrarySystem.Api.Entities.Book", b =>
                 {
                     b.Navigation("BorrowRecords");
+                    b.Navigation("BookRatings");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.User", b =>
                 {
                     b.Navigation("BorrowRecords");
+                    b.Navigation("BookRatings");
                 });
 #pragma warning restore 612, 618
         }
