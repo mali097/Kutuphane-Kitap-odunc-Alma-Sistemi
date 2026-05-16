@@ -112,17 +112,9 @@ public sealed class BookRatingService : IBookRatingService
     {
         var userRatings = await _context.BookRatings
             .AsNoTracking()
+            .Include(item => item.Book)
             .Where(item => item.UserId == userId && !item.IsDeleted && item.Book != null && !item.Book.IsDeleted)
-            .Select(item => new
-            {
-                item.BookId,
-                item.Score,
-                RatedAt = item.UpdatedDate ?? item.CreatedDate,
-                item.Book!.Title,
-                item.Book.Author,
-                item.Book.Genre
-            })
-            .OrderByDescending(item => item.RatedAt)
+            .OrderByDescending(item => item.UpdatedDate ?? item.CreatedDate)
             .ToListAsync(cancellationToken);
 
         var summaries = await GetBookRatingSummariesAsync(userRatings.Select(item => item.BookId), cancellationToken);
@@ -130,15 +122,16 @@ public sealed class BookRatingService : IBookRatingService
         return userRatings.Select(item =>
         {
             summaries.TryGetValue(item.BookId, out var summary);
+            var book = item.Book!;
             return new UserRatedBookItem(
                 item.BookId,
-                item.Title,
-                item.Author,
-                item.Genre,
+                book.Title,
+                book.Author,
+                GenreTypeListConverter.ToGenreNames(book.Genres),
                 item.Score,
                 summary?.AverageRating,
                 summary?.RatingCount ?? 0,
-                item.RatedAt);
+                item.UpdatedDate ?? item.CreatedDate);
         }).ToList();
     }
 
@@ -148,39 +141,40 @@ public sealed class BookRatingService : IBookRatingService
 
         var ratings = await _context.BookRatings
             .AsNoTracking()
-            .Where(item => !item.IsDeleted && item.Book != null && !item.Book.IsDeleted)
-            .GroupBy(item => new
-            {
-                item.BookId,
-                item.Book!.Title,
-                item.Book.Author,
-                item.Book.Genre,
-                item.Book.PublishYear
-            })
+            .Where(item => !item.IsDeleted)
+            .GroupBy(item => item.BookId)
             .Select(group => new
             {
-                group.Key.BookId,
-                group.Key.Title,
-                group.Key.Author,
-                group.Key.Genre,
-                group.Key.PublishYear,
+                BookId = group.Key,
                 AverageRating = group.Average(item => item.Score),
                 RatingCount = group.Count()
             })
             .OrderByDescending(item => item.AverageRating)
             .ThenByDescending(item => item.RatingCount)
-            .ThenBy(item => item.Title)
             .Take(normalizedLimit)
             .ToListAsync(cancellationToken);
 
-        return ratings.Select(item => new TopRatedBookItem(
-            item.BookId,
-            item.Title,
-            item.Author,
-            item.Genre,
-            item.PublishYear,
-            decimal.Round(item.AverageRating, 2),
-            item.RatingCount)).ToList();
+        var bookIds = ratings.Select(item => item.BookId).ToList();
+        var books = await _context.Books
+            .AsNoTracking()
+            .Where(book => bookIds.Contains(book.Id) && !book.IsDeleted)
+            .ToDictionaryAsync(book => book.Id, cancellationToken);
+
+        return ratings
+            .Where(item => books.ContainsKey(item.BookId))
+            .Select(item =>
+            {
+                var book = books[item.BookId];
+                return new TopRatedBookItem(
+                    item.BookId,
+                    book.Title,
+                    book.Author,
+                    GenreTypeListConverter.ToGenreNames(book.Genres),
+                    book.PublishYear,
+                    decimal.Round(item.AverageRating, 2),
+                    item.RatingCount);
+            })
+            .ToList();
     }
 
     private static bool IsEligibleRole(string role)

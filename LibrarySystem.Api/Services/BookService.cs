@@ -31,12 +31,6 @@ public sealed class BookService : IBookService
                     || book.Isbn.Contains(search));
             }
 
-            if (!string.IsNullOrWhiteSpace(query.Genre))
-            {
-                var genre = query.Genre.Trim();
-                bookQuery = bookQuery.Where(book => book.Genre == genre);
-            }
-
             if (query.PublishYear.HasValue)
             {
                 bookQuery = bookQuery.Where(book => book.PublishYear == query.PublishYear.Value);
@@ -48,10 +42,21 @@ public sealed class BookService : IBookService
             }
         }
 
-        return await bookQuery
+        var books = await bookQuery
             .OrderBy(book => book.Title)
             .ThenBy(book => book.Author)
             .ToListAsync(cancellationToken);
+
+        if (query is not null
+            && !string.IsNullOrWhiteSpace(query.Genre)
+            && Enum.TryParse<GenreType>(query.Genre.Trim(), ignoreCase: true, out var genreFilter))
+        {
+            books = books
+                .Where(book => book.Genres.Contains(genreFilter))
+                .ToList();
+        }
+
+        return books;
     }
 
     public async Task<Book?> GetBookByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -65,11 +70,13 @@ public sealed class BookService : IBookService
     {
         newBook.Title = newBook.Title.Trim();
         newBook.Author = newBook.Author.Trim();
-        newBook.Isbn = newBook.Isbn.Trim();
-        newBook.Genre = newBook.Genre.Trim();
+        newBook.Genres = newBook.Genres.Distinct().ToList();
         newBook.CreatedBy = actorUserId ?? 0;
 
         _context.Books.Add(newBook);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        newBook.Isbn = IsbnGenerator.GenerateForBookId(newBook.Id);
         await _context.SaveChangesAsync(cancellationToken);
         return newBook.Id;
     }
@@ -94,14 +101,10 @@ public sealed class BookService : IBookService
             book.Author = request.Author!.Trim();
         }
 
-        if (HasMeaningfulValue(request.Isbn))
+        if (request.Genres is { Count: > 0 })
         {
-            book.Isbn = request.Isbn!.Trim();
-        }
-
-        if (HasMeaningfulValue(request.Genre))
-        {
-            book.Genre = request.Genre!.Trim();
+            var (_, parsedGenres) = GenreTypeListConverter.ValidateAndParseNames(request.Genres, required: true);
+            book.Genres = parsedGenres;
         }
 
         if (request.PublishYear.HasValue)

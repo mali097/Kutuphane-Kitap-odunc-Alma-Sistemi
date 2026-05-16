@@ -17,7 +17,7 @@ public sealed record UserRatedBookItem(
     int BookId,
     string Title,
     string Author,
-    string Genre,
+    IReadOnlyList<string> Genres,
     decimal MyRating,
     decimal? AverageRating,
     int RatingCount,
@@ -27,7 +27,7 @@ public sealed record TopRatedBookItem(
     int BookId,
     string Title,
     string Author,
-    string Genre,
+    IReadOnlyList<string> Genres,
     int PublishYear,
     decimal AverageRating,
     int RatingCount);

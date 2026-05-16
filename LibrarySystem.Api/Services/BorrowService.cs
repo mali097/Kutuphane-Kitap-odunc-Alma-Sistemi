@@ -97,4 +97,26 @@ public sealed class BorrowService : IBorrowService
             .OrderByDescending(record => record.BorrowDate)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<BorrowRecord>> GetAllBorrowRecordsWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.BorrowRecords
+            .AsNoTracking()
+            .Where(record => !record.IsDeleted)
+            .Include(record => record.User)
+            .Include(record => record.Book)
+            .OrderByDescending(record => record.BorrowDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<BorrowRecord>> GetActiveBorrowRecordsWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.BorrowRecords
+            .AsNoTracking()
+            .Where(record => !record.IsDeleted && !record.IsReturned)
+            .Include(record => record.User)
+            .Include(record => record.Book)
+            .OrderByDescending(record => record.BorrowDate)
+            .ToListAsync(cancellationToken);
+    }
 }
