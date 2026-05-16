@@ -37,13 +37,6 @@ public sealed class UserService : IUserService
             .FirstOrDefaultAsync(user => user.Id == id && !user.IsDeleted, cancellationToken);
     }
 
-    public async Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default)
-    {
-        return await _context.Users
-            .AsNoTracking()
-            .AnyAsync(user => !user.IsDeleted && user.Role == "Admin", cancellationToken);
-    }
-
     public async Task<int> AddAsync(CreateUserRequest request, int? actorUserId = null, CancellationToken cancellationToken = default)
     {
         var newUser = new User
