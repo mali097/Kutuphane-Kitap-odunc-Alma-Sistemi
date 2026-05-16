@@ -68,6 +68,23 @@ public sealed class AuthService : IAuthService
         );
     }
 
+    public async Task<UserLoginResponse?> LoginAdminAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await LoginAsync(request, cancellationToken);
+        if (response is null)
+        {
+            return null;
+        }
+
+        if (!string.Equals(response.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            SessionStore.TryRemove(response.Token.Trim(), out _);
+            return null;
+        }
+
+        return response;
+    }
+
     public Task<bool> LogoutAsync(UserLogoutRequest request, CancellationToken cancellationToken = default)
     {
         var sessionToken = request.SessionToken.Trim();
@@ -108,6 +125,35 @@ public sealed class AuthService : IAuthService
         user.UpdatedBy = user.Id;
         await _context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public Task<int?> GetUserIdBySessionTokenAsync(string sessionToken, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken) || !TryGetUserIdByToken(sessionToken, out var userId))
+        {
+            return Task.FromResult<int?>(null);
+        }
+
+        return Task.FromResult<int?>(userId);
+    }
+
+    public async Task<bool> IsUserAdminAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await IsUserInRoleAsync(userId, "Admin", cancellationToken);
+    }
+
+    public async Task<bool> IsUserAuthorAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await IsUserInRoleAsync(userId, "Author", cancellationToken);
+    }
+
+    private async Task<bool> IsUserInRoleAsync(int userId, string role, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == userId && !item.IsDeleted, cancellationToken);
+
+        return user is not null && string.Equals(user.Role, role, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool TryGetUserIdByToken(string token, out int userId)

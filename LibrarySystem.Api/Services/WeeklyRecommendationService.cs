@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
+using LibrarySystem.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Api.Services;
@@ -17,74 +18,53 @@ public sealed class WeeklyRecommendationService : IWeeklyRecommendationService
         _context = context;
     }
 
-    public async Task<WeeklyRecommendationResponse> AddRecommendationAsync(
+    public async Task<WeeklyRecommendationCreatedResponse> AddRecommendationAsync(
         int authorUserId,
         CreateWeeklyRecommendationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var author = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == authorUserId && !item.IsDeleted, cancellationToken);
-
-        if (author is null)
+        var weekStart = GetUtcWeekStartMonday(DateTime.UtcNow);
+        var entity = new WeeklyRecommendation
         {
-            throw new InvalidOperationException("Author user not found.");
-        }
+            AuthorUserId = authorUserId,
+            BookTitle = request.BookTitle.Trim(),
+            Idea = request.Idea.Trim(),
+            WeekStartUtc = weekStart,
+            CreatedBy = authorUserId
+        };
 
-        var createdAt = DateTime.UtcNow;
-        var weekStart = GetWeekStart(createdAt);
-        var weekEnd = weekStart.AddDays(6);
+        _context.WeeklyRecommendations.Add(entity);
+        await _context.SaveChangesAsync(cancellationToken);
 
-        var id = Interlocked.Increment(ref _currentId);
-        var recommendationItem = new WeeklyRecommendationItem(
-            id,
-            request.BookTitle.Trim(),
-            request.Idea.Trim(),
-            authorUserId,
-            $"{author.FirstName} {author.LastName}".Trim(),
-            createdAt,
-            weekStart,
-            weekEnd);
-
-        Items[id] = recommendationItem;
-        return ToResponse(recommendationItem);
+        return new WeeklyRecommendationCreatedResponse { RecommendationId = entity.Id };
     }
 
-    public Task<List<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
+    public async Task<IReadOnlyList<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
         CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        var weekStart = GetWeekStart(now);
-        var weekEnd = weekStart.AddDays(6);
+        var weekStart = GetUtcWeekStartMonday(DateTime.UtcNow);
+        var rows = await _context.WeeklyRecommendations
+            .AsNoTracking()
+            .Where(item => !item.IsDeleted && item.WeekStartUtc == weekStart)
+            .OrderByDescending(item => item.CreatedDate)
+            .ToListAsync(cancellationToken);
 
-        var results = Items.Values
-            .Where(item => item.WeekStartDate == weekStart && item.WeekEndDate == weekEnd)
-            .OrderByDescending(item => item.CreatedAt)
-            .Select(ToResponse)
+        return rows
+            .Select(item => new WeeklyRecommendationResponse
+    {
+                RecommendationId = item.Id,
+                BookTitle = item.BookTitle,
+                Idea = item.Idea,
+                AuthorUserId = item.AuthorUserId
+            })
             .ToList();
-
-        return Task.FromResult(results);
     }
 
-    private static WeeklyRecommendationResponse ToResponse(WeeklyRecommendationItem item)
+    private static DateTime GetUtcWeekStartMonday(DateTime utcNow)
     {
-        return new WeeklyRecommendationResponse(
-            item.RecommendationId,
-            item.BookTitle,
-            item.Idea,
-            item.AuthorUserId,
-            item.AuthorName,
-            item.CreatedAt,
-            item.WeekStartDate,
-            item.WeekEndDate
-        );
-    }
-
-    private static DateTime GetWeekStart(DateTime utcDateTime)
-    {
-        var date = utcDateTime.Date;
-        var difference = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
-        return date.AddDays(-difference);
+        var date = utcNow.Kind == DateTimeKind.Utc ? utcNow.Date : DateTime.UtcNow.Date;
+        var daysFromMonday = ((int)date.DayOfWeek + 6) % 7;
+        return DateTime.SpecifyKind(date.AddDays(-daysFromMonday), DateTimeKind.Utc);
     }
 
     private sealed record WeeklyRecommendationItem(

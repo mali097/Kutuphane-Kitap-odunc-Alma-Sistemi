@@ -14,6 +14,12 @@ public sealed class UserService : IUserService
         _context = context;
     }
 
+    public async Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .AnyAsync(user => !user.IsDeleted && user.Role == "Admin", cancellationToken);
+    }
+
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Users

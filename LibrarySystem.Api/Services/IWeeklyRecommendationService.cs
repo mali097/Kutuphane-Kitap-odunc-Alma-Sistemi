@@ -4,11 +4,11 @@ namespace LibrarySystem.Api.Services;
 
 public interface IWeeklyRecommendationService
 {
-    Task<WeeklyRecommendationResponse> AddRecommendationAsync(
+    Task<WeeklyRecommendationCreatedResponse> AddRecommendationAsync(
         int authorUserId,
         CreateWeeklyRecommendationRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<List<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
+    Task<IReadOnlyList<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
         CancellationToken cancellationToken = default);
 }

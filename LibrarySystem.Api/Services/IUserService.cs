@@ -5,6 +5,7 @@ namespace LibrarySystem.Api.Services;
 
 public interface IUserService
 {
+    Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default);
     Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default);
