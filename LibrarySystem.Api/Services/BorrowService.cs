@@ -102,9 +102,15 @@ public sealed class BorrowService : IBorrowService
     {
         return await _context.BorrowRecords
             .AsNoTracking()
+
             .Where(record => !record.IsDeleted)
             .Include(record => record.User)
             .Include(record => record.Book)
+
+            .Include(record => record.User)
+            .Include(record => record.Book)
+            .Where(record => !record.IsDeleted)
+
             .OrderByDescending(record => record.BorrowDate)
             .ToListAsync(cancellationToken);
     }
@@ -113,10 +119,17 @@ public sealed class BorrowService : IBorrowService
     {
         return await _context.BorrowRecords
             .AsNoTracking()
+
             .Where(record => !record.IsDeleted && !record.IsReturned)
             .Include(record => record.User)
             .Include(record => record.Book)
             .OrderByDescending(record => record.BorrowDate)
+
+            .Include(record => record.User)
+            .Include(record => record.Book)
+            .Where(record => !record.IsDeleted && !record.IsReturned)
+            .OrderBy(record => record.ExpectedReturnDate)
+
             .ToListAsync(cancellationToken);
     }
 }
