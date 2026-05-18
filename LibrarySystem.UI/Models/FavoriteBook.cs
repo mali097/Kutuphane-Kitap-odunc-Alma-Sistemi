@@ -9,4 +9,5 @@ public class FavoriteBook
     public string BookAuthor { get; set; } = string.Empty;
     public string BookCategory { get; set; } = string.Empty;
     public DateTime AddedAt { get; set; } = DateTime.Now;
+    public string RatingDisplay { get; set; } = "4.6";
 }

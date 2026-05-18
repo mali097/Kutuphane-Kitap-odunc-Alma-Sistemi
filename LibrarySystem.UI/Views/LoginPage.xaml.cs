@@ -22,7 +22,7 @@ public partial class LoginPage : ContentPage
     }
 
     private async void GoRegister_Clicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync(nameof(RegisterPage));
+        => await DisplayAlert("Bilgi", "Kayıt ekranı şu an devre dışı.", "Tamam");
 
     private async void Login_Clicked(object sender, EventArgs e)
     {

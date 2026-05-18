@@ -2,29 +2,111 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="LibrarySystem.UI.Views.FavoritesPage"
-             Title="❤️ Favorilerim">
-    <CollectionView x:Name="FavoritesList" Margin="10"
-                    EmptyView="Henüz favori kitap eklemediniz. 🤍">
-        <CollectionView.ItemTemplate>
-            <DataTemplate>
-                <Border Margin="0,5" Padding="14" BackgroundColor="#FCE4EC"
-                        StrokeShape="RoundRectangle 12" Stroke="#F48FB1">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <VerticalStackLayout Grid.Column="0">
-                            <Label Text="{Binding BookTitle}" FontAttributes="Bold"
-                                   TextColor="#880E4F" FontSize="15" />
-                            <Label Text="{Binding BookAuthor, StringFormat='✍️ {0}'}"
-                                   TextColor="#AD1457" FontSize="13" />
-                            <Label Text="{Binding BookCategory, StringFormat='📂 {0}'}"
-                                   TextColor="Gray" FontSize="12" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="🗑️"
-                                BackgroundColor="Transparent" FontSize="20"
-                                CommandParameter="{Binding .}"
-                                Clicked="RemoveFav_Clicked" />
-                    </Grid>
-                </Border>
-            </DataTemplate>
-        </CollectionView.ItemTemplate>
-    </CollectionView>
+             Title="Favorilerim"
+             Shell.NavBarIsVisible="True"
+             BackgroundColor="#4A47A3">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="FavBg" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#4A47A3" Offset="0" />
+            <GradientStop Color="#FF8A5B" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid Background="{StaticResource FavBg}" RowDefinitions="Auto,*" Padding="0,8,0,0">
+        <Border Grid.Row="0"
+                Margin="16,8,16,0"
+                Padding="18,16"
+                BackgroundColor="#FFF9F2"
+                Stroke="#00000010"
+                StrokeShape="RoundRectangle 22,22,0,0">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="4" VerticalOptions="Center">
+                    <Label Text="Favorilerim"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#1B1530" />
+                    <Label Text="Kaydettiğin kitaplar"
+                           FontSize="13"
+                           TextColor="#6B6578" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1"
+                        Text="⚙"
+                        FontSize="20"
+                        TextColor="#5E4BB6"
+                        BackgroundColor="Transparent"
+                        Padding="8"
+                        VerticalOptions="Center"
+                        Clicked="OpenSettings_Clicked" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1"
+                Margin="16,0,16,16"
+                Padding="14,16"
+                BackgroundColor="#FFF9F2"
+                Stroke="#00000008"
+                StrokeShape="RoundRectangle 0,0,22,22">
+            <CollectionView x:Name="FavoritesList"
+                            SelectionMode="None"
+                            EmptyView="Henüz favori kitap eklemedin. Ana sayfadan kitapları kaydedebilirsin.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,12"
+                                Padding="14,12"
+                                BackgroundColor="White"
+                                Stroke="#E8E4DC"
+                                StrokeShape="RoundRectangle 16">
+                            <Border.Shadow>
+                                <Shadow Brush="#00000018" Offset="0,4" Radius="10" Opacity="0.3" />
+                            </Border.Shadow>
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowDefinitions="Auto,Auto">
+                                <Border Grid.RowSpan="2"
+                                        WidthRequest="52"
+                                        HeightRequest="72"
+                                        StrokeShape="RoundRectangle 10"
+                                        BackgroundColor="#E8E0F5"
+                                        VerticalOptions="Center">
+                                    <Label Text="📕"
+                                           FontSize="28"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                    <Label Text="{Binding BookTitle}"
+                                           FontAttributes="Bold"
+                                           TextColor="#1B1530"
+                                           FontSize="16"
+                                           LineBreakMode="TailTruncation" />
+                                    <Label Text="{Binding BookAuthor}"
+                                           TextColor="#6B6578"
+                                           FontSize="13"
+                                           LineBreakMode="TailTruncation" />
+                                    <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                        <Label Text="★" TextColor="#FFB800" FontSize="14" />
+                                        <Label Text="{Binding RatingDisplay}"
+                                               TextColor="#4A4758"
+                                               FontSize="13"
+                                               FontAttributes="Bold" />
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
+                                <Button Grid.Column="2"
+                                        Grid.RowSpan="2"
+                                        Text="🔖"
+                                        FontSize="18"
+                                        TextColor="White"
+                                        BackgroundColor="#5E4BB6"
+                                        CornerRadius="12"
+                                        WidthRequest="48"
+                                        HeightRequest="48"
+                                        VerticalOptions="Center"
+                                        CommandParameter="{Binding .}"
+                                        Clicked="RemoveFav_Clicked" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Border>
+    </Grid>
 </ContentPage>

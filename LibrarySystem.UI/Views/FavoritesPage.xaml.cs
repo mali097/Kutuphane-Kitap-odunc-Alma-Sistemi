@@ -34,4 +34,7 @@ public partial class FavoritesPage : ContentPage
             }
         }
     }
+
+    private async void OpenSettings_Clicked(object sender, EventArgs e)
+        => await Navigation.PushAsync(new UserPanelPage());
 }

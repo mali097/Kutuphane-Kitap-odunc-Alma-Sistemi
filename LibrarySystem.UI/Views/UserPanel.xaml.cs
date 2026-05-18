@@ -1,38 +1,103 @@
-﻿using LibrarySystem.UI.Helpers;
+﻿using System.Globalization;
+using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Services;
-using System.Xml;
 
 namespace LibrarySystem.UI.Views;
 
 public partial class UserPanelPage : ContentPage
 {
     private readonly IBorrowService _borrowService;
+    private readonly IBookService _bookService;
 
     public UserPanelPage()
     {
         InitializeComponent();
         _borrowService = new BorrowService();
+        _bookService = new BookService();
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         var user = SessionHelper.CurrentUser;
-        if (user == null) return;
+        if (user == null)
+        {
+            await DisplayAlert("Profil", "Oturum bilgisi yok. Ana sayfaya dönülüyor.", "Tamam");
+            await Navigation.PopAsync();
+            return;
+        }
 
-        NameLabel.Text = user.FullName;
+        NameLabel.Text = user.FullName ?? user.Username;
         UsernameLabel.Text = $"@{user.Username}";
-        RoleLabel.Text = user.Role == "Admin" ? "👑 Admin" : "📚 Üye";
+        RoleLabel.Text = SessionHelper.IsAdmin ? "Yönetici" : "Üye";
+
+        MembershipDateLabel.Text = user.CreatedAt.HasValue
+            ? user.CreatedAt.Value.ToString("d MMMM yyyy", new CultureInfo("tr-TR"))
+            : "Kayıt tarihi henüz alınamadı";
+
+        AdminRow.IsVisible = SessionHelper.IsAdmin;
+        AdminSeparator.IsVisible = SessionHelper.IsAdmin;
 
         var allBorrows = await _borrowService.GetUserBorrowsAsync(user.Id);
+        var active = allBorrows.Where(b => !b.IsReturned).ToList();
+        var history = allBorrows.Where(b => b.IsReturned)
+            .OrderByDescending(b => b.ReturnDate)
+            .ToList();
 
-        // LINQ ile aktif ve geçmiş ayır
-        ActiveBorrows.ItemsSource = allBorrows.Where(b => !b.IsReturned).ToList();
-        HistoryBorrows.ItemsSource = allBorrows.Where(b => b.IsReturned)
-                                               .OrderByDescending(b => b.ReturnDate)
-                                               .ToList();
+        ActiveBorrows.ItemsSource = active;
+        HistoryBorrows.ItemsSource = history;
+
+        StatActiveLabel.Text = active.Count.ToString();
+        StatHistoryLabel.Text = history.Count.ToString();
+
+        var favs = await _bookService.GetFavoritesAsync(user.Id);
+        StatFavoritesLabel.Text = favs.Count.ToString();
+
+        ActiveBorrows.HeightRequest = Math.Clamp(120 + active.Count * 96, 120, 360);
+        HistoryBorrows.HeightRequest = Math.Clamp(100 + history.Count * 88, 100, 320);
     }
 
-    private async void ChangePass_Clicked(object sender, EventArgs e)
+    private async void ContactUs_Tapped(object? sender, EventArgs e)
+        => await DisplayAlert("Bize ulaşın",
+            "Görüş ve önerilerin için: destek@kutuphane-ornek.com adresine yazabilirsin.",
+            "Tamam");
+
+    private async void LanguageTheme_Tapped(object? sender, EventArgs e)
+    {
+        var pick = await DisplayActionSheet("Dil ve tema", "İptal", null, "Açık tema", "Koyu tema", "Sistem varsayılanı");
+        if (pick is null || pick == "İptal") return;
+
+        if (pick == "Açık tema")
+            Application.Current!.UserAppTheme = AppTheme.Light;
+        else if (pick == "Koyu tema")
+            Application.Current!.UserAppTheme = AppTheme.Dark;
+        else
+            Application.Current!.UserAppTheme = AppTheme.Unspecified;
+    }
+
+    private async void NotificationSettings_Tapped(object? sender, EventArgs e)
+        => await DisplayAlert("Bildirim ayarları",
+            "Şu an yalnızca kitap teslim ve iade bildirimleri gösteriliyor. İleride ek seçenekler buradan yönetilebilecek.",
+            "Tamam");
+
+    private async void Favorites_Tapped(object? sender, EventArgs e)
+        => await Navigation.PushAsync(new FavoritesPage());
+
+    private async void Admin_Tapped(object? sender, EventArgs e)
+    {
+        if (!SessionHelper.IsAdmin) return;
+        await Navigation.PushAsync(new AdminPage());
+    }
+
+    private async void ChangePass_Tapped(object? sender, EventArgs e)
         => await Navigation.PushAsync(new ChangePasswordPage());
+
+    private async void Logout_Clicked(object sender, EventArgs e)
+    {
+        var ok = await DisplayAlert("Çıkış", "Çıkış yapmak istiyor musunuz?", "Evet", "Hayır");
+        if (!ok) return;
+
+        SessionHelper.CurrentUser = null;
+        await Shell.Current.GoToAsync("//MainPage");
+    }
 }

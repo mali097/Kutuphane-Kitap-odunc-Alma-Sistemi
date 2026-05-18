@@ -8,7 +8,12 @@ public partial class MainPage : ContentPage
 {
     private readonly IBookService _bookService;
     private List<Book> _allBooks = new();
-    private bool _isDarkMode;
+    private string? _selectedCategory;
+
+    private static readonly string[] CategoryOptions =
+    {
+        "Tümü", "Roman", "Bilim", "Tarih", "Teknoloji", "Felsefe", "Çocuk", "Biyografi"
+    };
 
     public MainPage()
     {
@@ -51,41 +56,34 @@ public partial class MainPage : ContentPage
                 book.IsFavorite = favIds.Contains(book.Id);
         }
 
-        BooksCollectionView.ItemsSource = null;
-        BooksCollectionView.ItemsSource = _allBooks;
+        ApplyBookFilter();
+    }
+
+    private void ApplyBookFilter()
+    {
+        IEnumerable<Book> q = _allBooks;
+
+        if (!string.IsNullOrEmpty(_selectedCategory) && _selectedCategory != "Tümü")
+        {
+            q = q.Where(b =>
+                b.Category.Equals(_selectedCategory, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var term = KitapSearchBar.Text?.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            q = q.Where(b =>
+                b.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                b.Author.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                b.ISBN.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                b.Category.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        BooksCollectionView.ItemsSource = q.ToList();
     }
 
     private void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(e.NewTextValue))
-        {
-            BooksCollectionView.ItemsSource = _allBooks;
-            return;
-        }
-
-        var filtered = _allBooks.Where(b =>
-            b.Title.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
-            b.Author.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
-            b.ISBN.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase) ||
-            b.Category.Contains(e.NewTextValue, StringComparison.OrdinalIgnoreCase)
-        ).ToList();
-
-        BooksCollectionView.ItemsSource = filtered;
-    }
-
-    private void CategoryPicker_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        var selected = CategoryPicker.SelectedItem?.ToString();
-        if (string.IsNullOrEmpty(selected) || selected == "Tümü")
-        {
-            BooksCollectionView.ItemsSource = _allBooks;
-            return;
-        }
-
-        BooksCollectionView.ItemsSource = _allBooks
-            .Where(b => b.Category.Equals(selected, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
+        => ApplyBookFilter();
 
     private async void Book_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -142,37 +140,26 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void ThemeToggle_Clicked(object sender, EventArgs e)
+    private async void TabCategories_Clicked(object sender, EventArgs e)
     {
-        _isDarkMode = !_isDarkMode;
-        Application.Current!.UserAppTheme = _isDarkMode ? AppTheme.Dark : AppTheme.Light;
+        var pick = await DisplayActionSheet("Kategori seç", "İptal", null, CategoryOptions);
+        if (string.IsNullOrEmpty(pick) || pick == "İptal")
+            return;
+
+        _selectedCategory = pick == "Tümü" ? null : pick;
+        ApplyBookFilter();
     }
-
-    private void Filter_Clicked(object sender, EventArgs e)
-        => CategoryPicker.Focus();
-
-    private async void Hamburger_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Menü", "Menü yakında eklenecek.", "Tamam");
 
     private async void Notifications_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Bildirimler", "Bildirimler yakında eklenecek.", "Tamam");
+        => await Navigation.PushAsync(new NotificationsPage());
 
-    private async void ViewAllQuotes_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Yazarlar", "Tüm yazar görüşleri yakında eklenecek.", "Tamam");
+    private async void TabNotifications_Clicked(object sender, EventArgs e)
+        => await Navigation.PushAsync(new NotificationsPage());
 
-    private async void ViewAllPopular_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Popüler", "Tüm popüler kitaplar yakında eklenecek.", "Tamam");
+    private async void TabSettings_Clicked(object sender, EventArgs e)
+        => await Navigation.PushAsync(new UserPanelPage());
 
-    private void TabHome_Clicked(object sender, EventArgs e)
-    {
-        // already here
-    }
-
-    private void TabCategories_Clicked(object sender, EventArgs e)
-        => CategoryPicker.Focus();
-
-    private async void TabHistory_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Geçmişim", "Geçmiş ekranı yakında eklenecek.", "Tamam");
+    private void TabHome_Clicked(object sender, EventArgs e) { }
 
     private sealed record QuoteCard(string Author, string Text);
     private sealed record PopularBookCard(int Rank, string Title, string Author, string Rating, string RowColor);

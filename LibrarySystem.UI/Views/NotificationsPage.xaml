@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.NotificationsPage"
+             Title="Bildirimler"
+             Shell.NavBarIsVisible="True"
+             BackgroundColor="#3D3A8F">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="NotifPageBg" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#4A47A3" Offset="0" />
+            <GradientStop Color="#FF8A5B" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid Background="{StaticResource NotifPageBg}" Padding="0,8,0,0" RowDefinitions="Auto,*">
+        <Border Grid.Row="0"
+                Margin="16,8,16,0"
+                Padding="18,16"
+                BackgroundColor="#FFF9F2"
+                Stroke="#00000010"
+                StrokeShape="RoundRectangle 22,22,0,0">
+            <VerticalStackLayout Spacing="14">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Button Text="←"
+                            FontSize="18"
+                            TextColor="#2B2348"
+                            BackgroundColor="Transparent"
+                            Padding="0"
+                            Clicked="Back_Clicked" />
+                    <Label Grid.Column="1"
+                           Text="Bildirimler"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="#1B1530"
+                           VerticalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                    <Button Grid.Column="2"
+                            Text="⚙"
+                            FontSize="18"
+                            TextColor="#5E4BB6"
+                            BackgroundColor="Transparent"
+                            Padding="0"
+                            Clicked="Settings_Clicked" />
+                </Grid>
+
+                <HorizontalStackLayout Spacing="20" Padding="4,0">
+                    <Label x:Name="TabAll"
+                           Text="Tümü"
+                           FontAttributes="Bold"
+                           TextColor="#5E4BB6">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="TabAll_Tapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label x:Name="TabUnread"
+                           Text="Okunmamış"
+                           TextColor="#8A8798">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="TabUnread_Tapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label x:Name="TabRead"
+                           Text="Okunan"
+                           TextColor="#8A8798">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="TabRead_Tapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
+                <BoxView x:Name="TabUnderline"
+                         HeightRequest="3"
+                         WidthRequest="52"
+                         Color="#FFB800"
+                         HorizontalOptions="Start"
+                         Margin="4,0,0,0" />
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Row="1"
+                Margin="16,0,16,16"
+                Padding="12,16"
+                BackgroundColor="#FFF9F2"
+                Stroke="#00000008"
+                StrokeShape="RoundRectangle 0,0,22,22">
+            <CollectionView x:Name="NotificationsList"
+                            SelectionMode="None"
+                            EmptyView="Henüz teslim veya iade bildirimin yok.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,12"
+                                Padding="14,12"
+                                BackgroundColor="White"
+                                Stroke="#E8E4DC"
+                                StrokeShape="RoundRectangle 16">
+                            <Border.Shadow>
+                                <Shadow Brush="#00000018" Offset="0,4" Radius="12" Opacity="0.35" />
+                            </Border.Shadow>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnNotificationTapped" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                                <Border Grid.RowSpan="2"
+                                        WidthRequest="44"
+                                        HeightRequest="44"
+                                        StrokeShape="RoundRectangle 12"
+                                        BackgroundColor="{Binding IconBackground}"
+                                        VerticalOptions="Start">
+                                    <Label Text="{Binding IconGlyph}"
+                                           FontSize="20"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                                <Label Grid.Column="1"
+                                       Text="{Binding Title}"
+                                       FontAttributes="Bold"
+                                       TextColor="#1B1530"
+                                       FontSize="15" />
+                                <Label Grid.Column="2"
+                                       Text="{Binding RelativeTimeText}"
+                                       TextColor="#9A96A8"
+                                       FontSize="12"
+                                       VerticalOptions="Start" />
+                                <Label Grid.Row="1"
+                                       Grid.Column="1"
+                                       Grid.ColumnSpan="2"
+                                       Text="{Binding Detail}"
+                                       TextColor="#6B6578"
+                                       FontSize="13"
+                                       LineBreakMode="WordWrap" />
+                                <Ellipse Grid.Row="2"
+                                         Grid.Column="2"
+                                         WidthRequest="10"
+                                         HeightRequest="10"
+                                         Fill="{Binding StatusDotColor}"
+                                         HorizontalOptions="End"
+                                         VerticalOptions="End" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Border>
+    </Grid>
+</ContentPage>
