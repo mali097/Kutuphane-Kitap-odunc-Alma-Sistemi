@@ -4,6 +4,7 @@ using LibrarySystem.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibrarySystem.Api.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    partial class LibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516115425_AddBookFavorites")]
+    partial class AddBookFavorites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,10 +43,9 @@ namespace LibrarySystem.Api.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Genres")
+                    b.Property<string>("Genre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Genre");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
@@ -261,10 +263,6 @@ namespace LibrarySystem.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AuthorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("AuthorUserId")
                         .HasColumnType("int");
 
@@ -291,17 +289,12 @@ namespace LibrarySystem.Api.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("WeekEndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("WeekStartDate")
+                    b.Property<DateTime>("WeekStartUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorUserId");
-
-                    b.HasIndex("WeekStartDate", "WeekEndDate");
 
                     b.ToTable("WeeklyRecommendations");
                 });
@@ -365,13 +358,13 @@ namespace LibrarySystem.Api.Migrations
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.WeeklyRecommendation", b =>
                 {
-                    b.HasOne("LibrarySystem.Api.Entities.User", "AuthorUser")
+                    b.HasOne("LibrarySystem.Api.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AuthorUser");
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.Book", b =>

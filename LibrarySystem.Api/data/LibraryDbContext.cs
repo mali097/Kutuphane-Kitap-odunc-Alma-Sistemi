@@ -1,58 +1,100 @@
 ﻿using LibrarySystem.Api.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace LibrarySystem.Api.Data
+namespace LibrarySystem.Api.Data;
+
+public class LibraryDbContext : DbContext
 {
-    public class LibraryDbContext : DbContext
+    public LibraryDbContext(DbContextOptions<LibraryDbContext> options) : base(options)
     {
-        public LibraryDbContext(DbContextOptions<LibraryDbContext> options) : base(options)
-        {
-        }
+    }
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Book> Books { get; set; }
-        public DbSet<BorrowRecord> BorrowRecords { get; set; }
-        public override int SaveChanges()
-        {
-            // Entity Framework'ün o an takip ettiği ve BaseEntity'den miras alan tüm kayıtları yakala
-            var entries = ChangeTracker.Entries<BaseEntity>();
+    public DbSet<User> Users { get; set; }
+    public DbSet<Book> Books { get; set; }
+    public DbSet<BorrowRecord> BorrowRecords { get; set; }
+    public DbSet<BookRating> BookRatings { get; set; }
+    public DbSet<WeeklyRecommendation> WeeklyRecommendations { get; set; }
+    public DbSet<BookFavorite> BookFavorites { get; set; }
 
-            foreach (var entry in entries)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<BookFavorite>(entity =>
+        {
+            entity.HasIndex(item => new { item.UserId, item.BookId }).IsUnique();
+            entity.HasOne(item => item.User)
+                .WithMany()
+                .HasForeignKey(item => item.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(item => item.Book)
+                .WithMany()
+                .HasForeignKey(item => item.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WeeklyRecommendation>(entity =>
+        {
+            entity.HasIndex(item => new { item.WeekStartDate, item.WeekEndDate });
+            entity.HasOne(item => item.AuthorUser)
+                .WithMany()
+                .HasForeignKey(item => item.AuthorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BookRating>(entity =>
+        {
+            entity.HasIndex(item => new { item.UserId, item.BookId }).IsUnique();
+            entity.Property(item => item.Score).HasPrecision(3, 1);
+        });
+
+        var genresComparer = new ValueComparer<List<GenreType>>(
+            (left, right) => (left ?? new List<GenreType>()).SequenceEqual(right ?? new List<GenreType>()),
+            genres => genres.Aggregate(0, (hash, genre) => HashCode.Combine(hash, genre)),
+            genres => genres.ToList());
+
+        modelBuilder.Entity<Book>(entity =>
+        {
+            entity.Property(book => book.Genres)
+                .HasColumnName("Genre")
+                .HasConversion(
+                    genres => GenreTypeListConverter.ToStorage(genres),
+                    value => GenreTypeListConverter.FromStorage(value))
+                .Metadata.SetValueComparer(genresComparer);
+        });
+    }
+
+    private void ApplyAuditInformation()
+    {
+        var entries = ChangeTracker.Entries<BaseEntity>();
+        var utcNow = DateTime.UtcNow;
+
+        foreach (var entry in entries)
+        {
+            if (entry.State == EntityState.Added)
             {
-                // Eğer bu veri veritabanına YENİ EKLENİYORSA
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Entity.CreatedDate = DateTime.Now;
-                }
-                // Eğer bu veri veritabanında GÜNCELLENİYORSA
-                else if (entry.State == EntityState.Modified)
-                {
-                    entry.Entity.UpdatedDate = DateTime.Now;
-                }
+                entry.Entity.CreatedDate = utcNow;
+                continue;
             }
 
-            // Bizim eklediğimiz tarihlerle birlikte asıl kaydetme işlemini çalıştır
-            return base.SaveChanges();
-        }
-
-        // 11. Madde İçin: Kaydetmeden hemen önce tarihleri otomatik basar
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            var entries = ChangeTracker.Entries<BaseEntity>();
-
-            foreach (var entry in entries)
+            if (entry.State == EntityState.Modified)
             {
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Entity.CreatedDate = DateTime.Now;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    entry.Entity.UpdatedDate = DateTime.Now;
-                }
+                entry.Entity.UpdatedDate = utcNow;
+                entry.Property(entity => entity.CreatedDate).IsModified = false;
             }
-
-            return base.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    public override int SaveChanges()
+    {
+        ApplyAuditInformation();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyAuditInformation();
+        return base.SaveChangesAsync(cancellationToken);
     }
 }
