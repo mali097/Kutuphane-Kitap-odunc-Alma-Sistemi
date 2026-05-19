@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
 
 namespace LibrarySystem.UI.Services;
@@ -6,11 +7,10 @@ namespace LibrarySystem.UI.Services;
 public class BorrowService : IBorrowService
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "http://10.0.2.2:5000";
 
     public BorrowService()
     {
-        _httpClient = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        _httpClient = ApiClientHelper.CreateClient();
     }
 
     public async Task<List<BorrowRecord>> GetAllBorrowsAsync()
