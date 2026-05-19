@@ -1,3 +1,5 @@
+using Microsoft.Maui.Graphics;
+
 namespace LibrarySystem.UI.Models;
 
 public class BookCategoryItem
