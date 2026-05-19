@@ -49,7 +49,7 @@ public sealed class BookService : IBookService
 
         if (query is not null
             && !string.IsNullOrWhiteSpace(query.Genre)
-            && Enum.TryParse<GenreType>(query.Genre.Trim(), ignoreCase: true, out var genreFilter))
+            && GenreCatalog.TryParse(query.Genre, out var genreFilter))
         {
             books = books
                 .Where(book => book.Genres.Contains(genreFilter))
@@ -72,6 +72,7 @@ public sealed class BookService : IBookService
         newBook.Author = newBook.Author.Trim();
         newBook.Genres = newBook.Genres.Distinct().ToList();
         newBook.CreatedBy = actorUserId ?? 0;
+        newBook.Isbn = string.Empty;
 
         _context.Books.Add(newBook);
         await _context.SaveChangesAsync(cancellationToken);

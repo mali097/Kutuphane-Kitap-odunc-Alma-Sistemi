@@ -14,12 +14,6 @@ public sealed class UserService : IUserService
         _context = context;
     }
 
-    public async Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default)
-    {
-        return await _context.Users
-            .AnyAsync(user => !user.IsDeleted && user.Role == "Admin", cancellationToken);
-    }
-
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -37,6 +31,13 @@ public sealed class UserService : IUserService
             .FirstOrDefaultAsync(user => user.Id == id && !user.IsDeleted, cancellationToken);
     }
 
+    public async Task<bool> AdminExistsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .AnyAsync(user => !user.IsDeleted && user.Role.ToLower() == "admin", cancellationToken);
+    }
+
     public async Task<int> AddAsync(CreateUserRequest request, int? actorUserId = null, CancellationToken cancellationToken = default)
     {
         var newUser = new User
@@ -45,7 +46,7 @@ public sealed class UserService : IUserService
             LastName = request.LastName.Trim(),
             Email = request.Email.Trim(),
             PasswordHash = AuthService.ComputeSha256(request.PasswordHash),
-            Role = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim(),
+            Role = NormalizeRole(string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role),
             CreatedBy = actorUserId ?? 0
         };
 
@@ -85,7 +86,7 @@ public sealed class UserService : IUserService
 
         if (HasMeaningfulValue(request.Role))
         {
-            user.Role = request.Role!.Trim();
+            user.Role = NormalizeRole(request.Role!);
         }
 
         if (HasMeaningfulValue(request.PasswordHash))
@@ -118,5 +119,16 @@ public sealed class UserService : IUserService
     {
         return !string.IsNullOrWhiteSpace(value)
             && !string.Equals(value.Trim(), "string", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeRole(string role)
+    {
+        var trimmed = role.Trim().ToLowerInvariant();
+        return trimmed switch
+        {
+            "admin" => "Admin",
+            "author" => "Author",
+            _ => "Student"
+        };
     }
 }

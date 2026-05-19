@@ -1,4 +1,4 @@
-﻿using LibrarySystem.Api.Contracts;
+using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
 using LibrarySystem.Api.Entities;
 using LibrarySystem.Api.Services;
@@ -32,6 +32,23 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
+    try
+    {
+        var databaseName = db.Database.GetDbConnection().Database;
+        logger.LogInformation("Applying EF migrations to database '{DatabaseName}'", databaseName);
+        db.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully.");
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Database migration failed. API will continue but data operations may fail.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -49,6 +66,44 @@ app.MapGet("/api/books", async (
     var books = await bookService.GetAllBooksAsync(query, cancellationToken);
     var summaries = await bookRatingService.GetBookRatingSummariesAsync(books.Select(item => item.Id), cancellationToken);
     return Results.Ok(books.Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries))));
+});
+
+app.MapGet("/api/genres", () =>
+    Results.Ok(GenreCatalog.AllNames.Select(name => new GenreOptionResponse(
+        name,
+        GenreCatalog.GetDisplayName(Enum.Parse<GenreType>(name, ignoreCase: true))))));
+
+app.MapGet("/api/books/by-category", async (
+    IBookService bookService,
+    IBookRatingService bookRatingService,
+    CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(null, cancellationToken);
+    var summaries = await bookRatingService.GetBookRatingSummariesAsync(books.Select(item => item.Id), cancellationToken);
+
+    var grouped = GenreCatalog.AllNames
+        .Select(category =>
+        {
+            if (!Enum.TryParse<GenreType>(category, ignoreCase: true, out var genreType))
+            {
+                return new BooksByCategoryResponse(category, category, []);
+            }
+
+            var categoryBooks = books
+                .Where(book => book.Genres.Contains(genreType))
+                .OrderBy(book => book.Title)
+                .ThenBy(book => book.Author)
+                .Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries)))
+                .ToList();
+
+            return new BooksByCategoryResponse(
+                category,
+                GenreCatalog.GetDisplayName(genreType),
+                categoryBooks);
+        })
+        .ToList();
+
+    return Results.Ok(grouped);
 });
 
 app.MapGet("/api/books/{id:int}", async (
@@ -205,6 +260,58 @@ app.MapPost("/api/auth/change-password", async (
         ? Results.Ok(new { Message = "Password changed." })
         : Results.BadRequest(new { Message = "Current password is invalid." });
 });
+
+app.MapPost("/books/{id}/upload-cover", async (int id, [FromForm] CoverUploadModel model) =>
+{
+    if (model.File == null || model.File.Length == 0)
+    {
+        return Results.BadRequest("Lutfen bir resim dosyasi secin.");
+    }
+
+    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+    if (!Directory.Exists(uploadsFolder))
+    {
+        Directory.CreateDirectory(uploadsFolder);
+    }
+
+    var filePath = Path.Combine(uploadsFolder, $"kitap-{id}.jpg");
+    using (var stream = new FileStream(filePath, FileMode.Create))
+    {
+        await model.File.CopyToAsync(stream);
+    }
+
+    return Results.Ok("Kapak resmi kaydedildi.");
+})
+.WithName("UploadBookCover")
+.DisableAntiforgery()
+.WithOpenApi();
+
+app.MapGet("/books/{id}/cover", (int id) =>
+{
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"kitap-{id}.jpg");
+    if (!System.IO.File.Exists(filePath))
+    {
+        return Results.NotFound("Bu kitaba ait kapak resmi bulunamadi.");
+    }
+
+    return Results.File(filePath, "image/jpeg");
+})
+.WithName("GetBookCover")
+.WithOpenApi();
+
+app.MapDelete("/books/{id}/cover", (int id) =>
+{
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"kitap-{id}.jpg");
+    if (!System.IO.File.Exists(filePath))
+    {
+        return Results.NotFound("Bu kitaba ait kapak resmi bulunamadi.");
+    }
+
+    System.IO.File.Delete(filePath);
+    return Results.NoContent();
+})
+.WithName("DeleteBookCover")
+.WithOpenApi();
 
 app.MapGet("/api/users/me/ratings", async (
     [FromHeader(Name = UserTokenHeader)] string? userToken,
@@ -422,6 +529,41 @@ app.MapGet("/api/admin/users", async (
 
     var users = await userService.GetAllAsync(cancellationToken);
     return Results.Ok(users.Select(MapUserToResponse));
+});
+
+app.MapPost("/api/admin/users", async (
+    CreateUserRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var roleErrors = ValidateUserRole(request.Role);
+    if (roleErrors.Count != 0)
+    {
+        return Results.ValidationProblem(roleErrors);
+    }
+
+    var newUserId = await userService.AddAsync(request, authorization.AdminUserId, cancellationToken);
+    var createdUser = await userService.GetByIdAsync(newUserId, cancellationToken);
+    return Results.Created(
+        $"/api/admin/users/{newUserId}",
+        createdUser is null
+            ? new { Message = "User created.", UserId = newUserId }
+            : MapUserToResponse(createdUser));
 });
 
 app.MapPost("/api/admin/books", async (
@@ -832,6 +974,29 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
         errors["passwordHash"] = ["Password must be at least 6 characters."];
     }
 
+    var roleErrors = ValidateUserRole(request.Role);
+    foreach (var (key, messages) in roleErrors)
+    {
+        errors[key] = messages;
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateUserRole(string? role)
+{
+    var errors = new Dictionary<string, string[]>();
+    if (string.IsNullOrWhiteSpace(role))
+    {
+        return errors;
+    }
+
+    var allowedRoles = new[] { "student", "author", "admin" };
+    if (!allowedRoles.Contains(role.Trim().ToLowerInvariant()))
+    {
+        errors["role"] = ["Role must be one of: Student, Author, Admin."];
+    }
+
     return errors;
 }
 
@@ -1090,6 +1255,13 @@ internal sealed record BookResponse(
     decimal? AverageRating,
     int RatingCount
 );
+
+internal sealed record GenreOptionResponse(string Id, string DisplayName);
+
+internal sealed record BooksByCategoryResponse(
+    string Category,
+    string DisplayName,
+    IReadOnlyList<BookResponse> Books);
 
 internal sealed record UserResponse(
     int Id,
