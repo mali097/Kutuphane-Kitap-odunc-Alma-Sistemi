@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.LoginPage"
+             Title="Giriş"
+             BackgroundColor="#F6F8FB">
+    <ScrollView>
+        <VerticalStackLayout Padding="22" Spacing="16">
+
+            <VerticalStackLayout Spacing="6">
+                <Label Text="📚 Kütüphane Sistemi"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="#1A237E" />
+                <Label Text="Devam etmek için giriş yap"
+                       FontSize="13"
+                       TextColor="#607D8B" />
+            </VerticalStackLayout>
+
+            <Border Stroke="#E0E0E0"
+                    BackgroundColor="White"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="18">
+                <VerticalStackLayout Spacing="12">
+
+                    <Label Text="Giriş Yap"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="#263238" />
+
+                    <Entry x:Name="UsernameEntry"
+                           Placeholder="Kullanıcı adı"
+                           TextColor="#263238"
+                           PlaceholderColor="#90A4AE"
+                           Keyboard="Text"
+                           ReturnType="Next" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry x:Name="PasswordEntry"
+                               Grid.Column="0"
+                               Placeholder="Şifre"
+                               TextColor="#263238"
+                               PlaceholderColor="#90A4AE"
+                               IsPassword="True"
+                               ReturnType="Done" />
+                        <Button x:Name="TogglePasswordButton"
+                                Grid.Column="1"
+                                Text="👁"
+                                FontSize="16"
+                                BackgroundColor="#EEF2FF"
+                                TextColor="#1A237E"
+                                CornerRadius="12"
+                                Padding="10,8"
+                                Clicked="TogglePassword_Clicked" />
+                    </Grid>
+
+                    <Label x:Name="ErrorLabel"
+                           Text=""
+                           IsVisible="False"
+                           TextColor="#D32F2F"
+                           FontSize="12" />
+
+                    <Grid ColumnDefinitions="Auto,*" VerticalOptions="Center">
+                        <ActivityIndicator x:Name="BusyIndicator"
+                                           Grid.Column="0"
+                                           IsRunning="False"
+                                           IsVisible="False"
+                                           Color="#1565C0" />
+                        <Label x:Name="BusyText"
+                               Grid.Column="1"
+                               Text="Giriş yapılıyor..."
+                               IsVisible="False"
+                               TextColor="#607D8B"
+                               FontSize="12"
+                               VerticalOptions="Center"
+                               Margin="10,0,0,0" />
+                    </Grid>
+
+                    <Button x:Name="LoginButton"
+                            Text="Giriş Yap"
+                            BackgroundColor="#1565C0"
+                            TextColor="White"
+                            CornerRadius="12"
+                            Padding="14,12"
+                            Clicked="Login_Clicked" />
+
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Label Text="Hesabın yok mu?"
+                               TextColor="#607D8B"
+                               FontSize="12" />
+                        <Button Text="Kayıt Ol"
+                                FontSize="12"
+                                BackgroundColor="Transparent"
+                                TextColor="#1565C0"
+                                Padding="0"
+                                Clicked="GoRegister_Clicked" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

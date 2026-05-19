@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.FavoritesPage"
+             Title="Favorilerim"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F5F5F8">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0"
+              Background="{StaticResource HeaderGradient}"
+              Padding="14,48,14,20"
+              RowDefinitions="Auto,Auto"
+              RowSpacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Text="←"
+                        FontSize="20"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="Back_Clicked" />
+                <BoxView Grid.Column="2" WidthRequest="44" Color="Transparent" />
+            </Grid>
+
+            <VerticalStackLayout Grid.Row="1"
+                                 Spacing="6"
+                                 HorizontalOptions="Center">
+                <Label Text="Favorilerim"
+                       TextColor="White"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="Kaydettiğin kitaplar"
+                       TextColor="#E8E0FF"
+                       FontSize="13"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <CollectionView Grid.Row="1"
+                        x:Name="FavoritesList"
+                        Margin="12,8,12,0"
+                        SelectionMode="None"
+                        BackgroundColor="#F5F5F8"
+                        EmptyView="Henüz favori kitap eklemedin. Ana sayfadan kitapları kaydedebilirsin.">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,0,0,12"
+                            Padding="14,12"
+                            BackgroundColor="White"
+                            Stroke="#E8E4DC"
+                            StrokeShape="RoundRectangle 16">
+                        <Border.Shadow>
+                            <Shadow Brush="#00000018" Offset="0,4" Radius="10" Opacity="0.3" />
+                        </Border.Shadow>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowDefinitions="Auto,Auto">
+                            <Border Grid.RowSpan="2"
+                                    WidthRequest="52"
+                                    HeightRequest="72"
+                                    StrokeShape="RoundRectangle 10"
+                                    BackgroundColor="#E8E0F5"
+                                    VerticalOptions="Center">
+                                <Label Text="📕"
+                                       FontSize="28"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <Label Text="{Binding BookTitle}"
+                                       FontAttributes="Bold"
+                                       TextColor="#1B1530"
+                                       FontSize="16"
+                                       LineBreakMode="TailTruncation" />
+                                <Label Text="{Binding BookAuthor}"
+                                       TextColor="#6B6578"
+                                       FontSize="13"
+                                       LineBreakMode="TailTruncation" />
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <Label Text="★" TextColor="#FFB800" FontSize="14" />
+                                    <Label Text="{Binding RatingDisplay}"
+                                           TextColor="#4A4758"
+                                           FontSize="13"
+                                           FontAttributes="Bold" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2"
+                                    Grid.RowSpan="2"
+                                    Text="🔖"
+                                    FontSize="18"
+                                    TextColor="White"
+                                    BackgroundColor="#5E4BB6"
+                                    CornerRadius="12"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    VerticalOptions="Center"
+                                    CommandParameter="{Binding .}"
+                                    Clicked="RemoveFav_Clicked" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Border Grid.Row="2"
+                BackgroundColor="#F3F3F6"
+                StrokeShape="RoundRectangle 24"
+                Padding="14,10"
+                Margin="14,8,14,14">
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Button Grid.Column="0" Text="🏠&#10;Ana Sayfa" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabHome_Clicked" />
+                <Button Grid.Column="1" Text="🗂️&#10;Kategoriler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabCategories_Clicked" />
+                <Button Grid.Column="2" Text="🔖&#10;Favorilerim" BackgroundColor="#FFFFFF" TextColor="#5E4BB6" FontAttributes="Bold" CornerRadius="18" FontSize="11" />
+                <Button Grid.Column="3" Text="🔔&#10;Bildirimler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabNotifications_Clicked" />
+                <Button Grid.Column="4" Text="⚙️&#10;Ayarlar" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabSettings_Clicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

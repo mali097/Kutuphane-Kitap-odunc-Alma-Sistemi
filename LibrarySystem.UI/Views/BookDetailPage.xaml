@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.BookDetailPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F5F5F8">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0"
+              Background="{StaticResource HeaderGradient}"
+              Padding="14,48,14,20">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Text="←"
+                        FontSize="20"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="Back_Clicked" />
+                <BoxView Grid.Column="2" WidthRequest="44" Color="Transparent" />
+                <Button Grid.Column="2"
+                        x:Name="FavoriteHeaderBtn"
+                        Text="🔖"
+                        FontSize="18"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="FavoriteHeader_Clicked" />
+            </Grid>
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,0,14,16" Spacing="14">
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" Padding="4,0">
+                    <Border WidthRequest="110"
+                            HeightRequest="150"
+                            BackgroundColor="#2B1B4F"
+                            Stroke="#FFFFFF33"
+                            StrokeShape="RoundRectangle 14">
+                        <Label Text="📕"
+                               FontSize="48"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               TextColor="White" />
+                    </Border>
+                    <VerticalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Label x:Name="TitleLabel"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               TextColor="#1B1530"
+                               LineBreakMode="WordWrap" />
+                        <Label x:Name="AuthorLabel"
+                               FontSize="14"
+                               TextColor="#6B6578" />
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="★★★★★" TextColor="#FFB800" FontSize="12" />
+                            <Label x:Name="RatingLabel"
+                                   Text="4.8"
+                                   FontSize="13"
+                                   TextColor="#4A4758"
+                                   FontAttributes="Bold" />
+                            <Label x:Name="ReviewCountLabel"
+                                   Text="(0)"
+                                   FontSize="12"
+                                   TextColor="#9A96A8" />
+                        </HorizontalStackLayout>
+                        <Border BackgroundColor="#EDE9FF"
+                                StrokeShape="RoundRectangle 12"
+                                Padding="10,4"
+                                HorizontalOptions="Start">
+                            <Label x:Name="CategoryTagLabel"
+                                   TextColor="#5E4BB6"
+                                   FontSize="12"
+                                   FontAttributes="Bold" />
+                        </Border>
+                        <Label x:Name="StatusLabel"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="#2E7D32" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <Border BackgroundColor="White"
+                        Stroke="#E8E4DC"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Kitap Bilgileri"
+                               FontAttributes="Bold"
+                               FontSize="16"
+                               TextColor="#1B1530" />
+
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <Label Grid.Row="0" Text="👤" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="2">
+                                <Label Text="Yazar" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="InfoAuthorLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="1" Text="📊" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
+                                <Label Text="Barkod Kodu" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="IsbnLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="2" Text="📂" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="2">
+                                <Label Text="Tür" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="CategoryLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="3" Text="📅" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="3" Grid.Column="1" Spacing="2">
+                                <Label Text="Yayınlanma Tarihi" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="YearLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="4" Text="📄" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="4" Grid.Column="1" Spacing="2">
+                                <Label Text="Sayfa Sayısı" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="PageLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="5" Text="🏢" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="5" Grid.Column="1" Spacing="2">
+                                <Label Text="Yayınevi" FontSize="11" TextColor="#9A96A8" />
+                                <Label x:Name="PublisherLabel" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Row="6" Text="🌐" FontSize="16" />
+                            <VerticalStackLayout Grid.Row="6" Grid.Column="1" Spacing="2">
+                                <Label Text="Dil" FontSize="11" TextColor="#9A96A8" />
+                                <Label Text="Türkçe" FontSize="14" FontAttributes="Bold" TextColor="#1B1530" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border BackgroundColor="White"
+                        Stroke="#E8E4DC"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Açıklama"
+                               FontAttributes="Bold"
+                               FontSize="16"
+                               TextColor="#1B1530" />
+                        <Label x:Name="DescLabel"
+                               TextColor="#4A4758"
+                               FontSize="14"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout x:Name="AdminButtons" IsVisible="False" Spacing="10">
+                    <Button Text="✏️ Düzenle"
+                            BackgroundColor="#5E4BB6"
+                            TextColor="White"
+                            CornerRadius="14"
+                            Clicked="Edit_Clicked" />
+                    <Button Text="🗑️ Sil"
+                            BackgroundColor="#D32F2F"
+                            TextColor="White"
+                            CornerRadius="14"
+                            Clicked="Delete_Clicked" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="2" Padding="14,0,14,14" Spacing="0">
+            <Button x:Name="FavoriteBtn"
+                    Text="+  Favorilere Ekle"
+                    BackgroundColor="#5E4BB6"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="14"
+                    HeightRequest="52"
+                    Clicked="FavoriteBtn_Clicked" />
+            <Button x:Name="BorrowBtn"
+                    Text="📚 Ödünç Al"
+                    BackgroundColor="#FF6F00"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="14"
+                    HeightRequest="48"
+                    Margin="0,8,0,0"
+                    Clicked="BorrowThis_Clicked" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

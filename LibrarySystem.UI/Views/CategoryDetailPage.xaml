@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.CategoryDetailPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F5F5F8">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0"
+              Background="{StaticResource HeaderGradient}"
+              Padding="14,48,14,16">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Text="←"
+                        FontSize="20"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="Back_Clicked" />
+                <Label x:Name="HeaderTitleLabel"
+                       Grid.Column="1"
+                       TextColor="White"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center"
+                       LineBreakMode="TailTruncation" />
+                <Button Grid.Column="2"
+                        Text="⚙"
+                        FontSize="18"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="Filter_Clicked" />
+            </Grid>
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,8,14,0" Spacing="12">
+
+                <Border BackgroundColor="White"
+                        Stroke="#E8E4DC"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="16">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                        <Border x:Name="HeroIconBorder"
+                                WidthRequest="56"
+                                HeightRequest="56"
+                                StrokeShape="RoundRectangle 14"
+                                VerticalOptions="Start">
+                            <Label x:Name="HeroIconLabel"
+                                   FontSize="26"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Spacing="6" VerticalOptions="Center">
+                            <Label x:Name="HeroNameLabel"
+                                   FontAttributes="Bold"
+                                   FontSize="18"
+                                   TextColor="#1B1530" />
+                            <Label x:Name="HeroCountLabel"
+                                   FontSize="13"
+                                   TextColor="#6B6578" />
+                            <Label x:Name="HeroDescriptionLabel"
+                                   FontSize="13"
+                                   TextColor="#4A4758"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <CollectionView x:Name="BooksList"
+                                SelectionMode="Single"
+                                ItemSizingStrategy="MeasureAllItems"
+                                SelectionChanged="Book_SelectionChanged">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,10"
+                                    BackgroundColor="White"
+                                    Stroke="#E8E4DC"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Border WidthRequest="52"
+                                            HeightRequest="72"
+                                            BackgroundColor="#E8E0F5"
+                                            StrokeShape="RoundRectangle 10"
+                                            VerticalOptions="Center">
+                                        <Label Text="📕"
+                                               FontSize="26"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                        <Label Text="{Binding Book.Title}"
+                                               FontAttributes="Bold"
+                                               FontSize="15"
+                                               TextColor="#1B1530"
+                                               LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Book.Author}"
+                                               FontSize="13"
+                                               TextColor="#6B6578"
+                                               LineBreakMode="TailTruncation" />
+                                        <HorizontalStackLayout Spacing="4">
+                                            <Label Text="★★★★★" TextColor="#FFB800" FontSize="11" />
+                                            <Label Text="{Binding RatingDisplay}"
+                                                   FontSize="12"
+                                                   TextColor="#4A4758"
+                                                   FontAttributes="Bold" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="2"
+                                            Text="🔖"
+                                            FontSize="16"
+                                            TextColor="White"
+                                            BackgroundColor="#5E4BB6"
+                                            CornerRadius="12"
+                                            WidthRequest="44"
+                                            HeightRequest="44"
+                                            VerticalOptions="Center"
+                                            CommandParameter="{Binding Book}"
+                                            Clicked="Bookmark_Clicked" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="2"
+                BackgroundColor="#F3F3F6"
+                StrokeShape="RoundRectangle 24"
+                Padding="14,10"
+                Margin="14,8,14,14">
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Button Grid.Column="0" Text="🏠&#10;Ana Sayfa" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabHome_Clicked" />
+                <Button Grid.Column="1" Text="🗂️&#10;Kategoriler" BackgroundColor="#FFFFFF" TextColor="#5E4BB6" FontAttributes="Bold" CornerRadius="18" FontSize="11" Clicked="TabCategories_Clicked" />
+                <Button Grid.Column="2" Text="🔖&#10;Favorilerim" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabFavorites_Clicked" />
+                <Button Grid.Column="3" Text="🔔&#10;Bildirimler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabNotifications_Clicked" />
+                <Button Grid.Column="4" Text="⚙️&#10;Ayarlar" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabSettings_Clicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>
