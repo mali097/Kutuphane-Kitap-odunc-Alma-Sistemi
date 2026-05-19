@@ -11,24 +11,16 @@ namespace LibrarySystem.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(
-                """
-                IF OBJECT_ID(N'[dbo].[WeeklyRecommendations]', N'U') IS NOT NULL
-                    DROP TABLE [dbo].[WeeklyRecommendations];
-                """);
-
             migrationBuilder.CreateTable(
                 name: "WeeklyRecommendations",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    AuthorUserId = table.Column<int>(type: "int", nullable: false),
                     BookTitle = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Idea = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AuthorUserId = table.Column<int>(type: "int", nullable: false),
-                    AuthorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    WeekStartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    WeekEndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    WeekStartUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<int>(type: "int", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -50,11 +42,6 @@ namespace LibrarySystem.Api.Migrations
                 name: "IX_WeeklyRecommendations_AuthorUserId",
                 table: "WeeklyRecommendations",
                 column: "AuthorUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WeeklyRecommendations_WeekStartDate_WeekEndDate",
-                table: "WeeklyRecommendations",
-                columns: new[] { "WeekStartDate", "WeekEndDate" });
         }
 
         /// <inheritdoc />

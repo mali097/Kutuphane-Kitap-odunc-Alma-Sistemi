@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibrarySystem.Api.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    [Migration("20260519132354_AddWeeklyRecommendations")]
-    partial class AddWeeklyRecommendations
+    [Migration("20260516115425_AddBookFavorites")]
+    partial class AddBookFavorites
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -73,6 +73,88 @@ namespace LibrarySystem.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookFavorite", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("BookFavorites");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Score")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("decimal(3,1)");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("BookRatings");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.BorrowRecord", b =>
@@ -181,10 +263,6 @@ namespace LibrarySystem.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AuthorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("AuthorUserId")
                         .HasColumnType("int");
 
@@ -211,19 +289,52 @@ namespace LibrarySystem.Api.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("WeekEndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("WeekStartDate")
+                    b.Property<DateTime>("WeekStartUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorUserId");
 
-                    b.HasIndex("WeekStartDate", "WeekEndDate");
-
                     b.ToTable("WeeklyRecommendations");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookFavorite", b =>
+                {
+                    b.HasOne("LibrarySystem.Api.Entities.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibrarySystem.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Api.Entities.BookRating", b =>
+                {
+                    b.HasOne("LibrarySystem.Api.Entities.Book", "Book")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibrarySystem.Api.Entities.User", "User")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.BorrowRecord", b =>
@@ -247,22 +358,26 @@ namespace LibrarySystem.Api.Migrations
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.WeeklyRecommendation", b =>
                 {
-                    b.HasOne("LibrarySystem.Api.Entities.User", "AuthorUser")
+                    b.HasOne("LibrarySystem.Api.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AuthorUser");
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.Book", b =>
                 {
+                    b.Navigation("BookRatings");
+
                     b.Navigation("BorrowRecords");
                 });
 
             modelBuilder.Entity("LibrarySystem.Api.Entities.User", b =>
                 {
+                    b.Navigation("BookRatings");
+
                     b.Navigation("BorrowRecords");
                 });
 #pragma warning restore 612, 618

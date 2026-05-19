@@ -35,7 +35,7 @@ public sealed class UserService : IUserService
     {
         return await _context.Users
             .AsNoTracking()
-            .AnyAsync(user => !user.IsDeleted && user.Role == "Admin", cancellationToken);
+            .AnyAsync(user => !user.IsDeleted && user.Role.ToLower() == "admin", cancellationToken);
     }
 
     public async Task<int> AddAsync(CreateUserRequest request, int? actorUserId = null, CancellationToken cancellationToken = default)

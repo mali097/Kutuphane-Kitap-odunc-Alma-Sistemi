@@ -31,12 +31,6 @@ public sealed class BookService : IBookService
                     || book.Isbn.Contains(search));
             }
 
-            if (!string.IsNullOrWhiteSpace(query.Genre) && GenreCatalog.TryParse(query.Genre, out var filterGenre))
-            {
-                var genre = GenreCatalog.ToStorageName(filterGenre);
-                bookQuery = bookQuery.Where(book => book.Genre == genre);
-            }
-
             if (query.PublishYear.HasValue)
             {
                 bookQuery = bookQuery.Where(book => book.PublishYear == query.PublishYear.Value);
@@ -48,10 +42,21 @@ public sealed class BookService : IBookService
             }
         }
 
-        return await bookQuery
+        var books = await bookQuery
             .OrderBy(book => book.Title)
             .ThenBy(book => book.Author)
             .ToListAsync(cancellationToken);
+
+        if (query is not null
+            && !string.IsNullOrWhiteSpace(query.Genre)
+            && GenreCatalog.TryParse(query.Genre, out var genreFilter))
+        {
+            books = books
+                .Where(book => book.Genres.Contains(genreFilter))
+                .ToList();
+        }
+
+        return books;
     }
 
     public async Task<Book?> GetBookByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -65,12 +70,7 @@ public sealed class BookService : IBookService
     {
         newBook.Title = newBook.Title.Trim();
         newBook.Author = newBook.Author.Trim();
-        if (!GenreCatalog.TryParse(newBook.Genre, out var genre))
-        {
-            throw new ArgumentException("Book genre must be one of the 22 allowed categories.", nameof(newBook));
-        }
-
-        newBook.Genre = GenreCatalog.ToStorageName(genre);
+        newBook.Genres = newBook.Genres.Distinct().ToList();
         newBook.CreatedBy = actorUserId ?? 0;
         newBook.Isbn = string.Empty;
 
@@ -102,19 +102,10 @@ public sealed class BookService : IBookService
             book.Author = request.Author!.Trim();
         }
 
-        if (HasMeaningfulValue(request.Isbn))
+        if (request.Genres is { Count: > 0 })
         {
-            book.Isbn = request.Isbn!.Trim();
-        }
-
-        if (HasMeaningfulValue(request.Genre))
-        {
-            if (!GenreCatalog.TryParse(request.Genre, out var genre))
-            {
-                throw new ArgumentException("Book genre must be one of the 22 allowed categories.", nameof(request));
-            }
-
-            book.Genre = GenreCatalog.ToStorageName(genre);
+            var (_, parsedGenres) = GenreTypeListConverter.ValidateAndParseNames(request.Genres, required: true);
+            book.Genres = parsedGenres;
         }
 
         if (request.PublishYear.HasValue)
