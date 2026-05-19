@@ -12,6 +12,21 @@ namespace LibrarySystem.Api.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<BorrowRecord> BorrowRecords { get; set; }
+        public DbSet<WeeklyRecommendation> WeeklyRecommendations { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<WeeklyRecommendation>(entity =>
+            {
+                entity.HasIndex(item => new { item.WeekStartDate, item.WeekEndDate });
+                entity.HasOne(item => item.AuthorUser)
+                    .WithMany()
+                    .HasForeignKey(item => item.AuthorUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
 
         private void ApplyAuditInformation()
         {

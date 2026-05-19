@@ -24,6 +24,23 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
+    try
+    {
+        var databaseName = db.Database.GetDbConnection().Database;
+        logger.LogInformation("Applying EF migrations to database '{DatabaseName}'", databaseName);
+        db.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully.");
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Database migration failed. API will continue but data operations may fail.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -39,6 +56,36 @@ app.MapGet("/api/books", async (
 {
     var books = await bookService.GetAllBooksAsync(query, cancellationToken);
     return Results.Ok(books.Select(MapBookToResponse));
+});
+
+app.MapGet("/api/genres", () =>
+    Results.Ok(GenreCatalog.AllNames.Select(name => new GenreOptionResponse(
+        name,
+        GenreCatalog.GetDisplayName(Enum.Parse<GenreType>(name, ignoreCase: true))))));
+
+app.MapGet("/api/books/by-category", async (
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(null, cancellationToken);
+    var booksByGenre = books
+        .Select(book => new { Book = book, Genre = GenreCatalog.NormalizeStoredGenre(book.Genre) })
+        .Where(item => item.Genre is not null)
+        .GroupBy(item => item.Genre!, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(group => group.Key, group => group.Select(item => item.Book).ToList(), StringComparer.OrdinalIgnoreCase);
+
+    var grouped = GenreCatalog.AllNames
+        .Select(category => new BooksByCategoryResponse(
+            category,
+            GenreCatalog.GetDisplayName(Enum.Parse<GenreType>(category, ignoreCase: true)),
+            (booksByGenre.TryGetValue(category, out var categoryBooks) ? categoryBooks : [])
+                .OrderBy(book => book.Title)
+                .ThenBy(book => book.Author)
+                .Select(MapBookToResponse)
+                .ToList()))
+        .ToList();
+
+    return Results.Ok(grouped);
 });
 
 app.MapGet("/api/books/{id:int}", async (int id, IBookService bookService, CancellationToken cancellationToken) =>
@@ -123,6 +170,69 @@ app.MapPost("/api/auth/change-password", async (
         ? Results.Ok(new { Message = "Password changed." })
         : Results.BadRequest(new { Message = "Email or current password is invalid." });
 });
+
+app.MapPost("/books/{id}/upload-cover", async (int id, [FromForm] CoverUploadModel model) =>
+{
+    if (model.File == null || model.File.Length == 0)
+    {
+        return Results.BadRequest("Ltfen bir resim dosyas sein.");
+    }
+
+    // 1. Resmi kaydedeceimiz klasrn yolunu belirliyoruz (Projenin iinde wwwroot/uploads)
+    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+    // Eer byle bir klasr yoksa, otomatik olutur
+    if (!Directory.Exists(uploadsFolder))
+    {
+        Directory.CreateDirectory(uploadsFolder);
+    }
+
+    // 2. Dosyann adn belirliyoruz (rn: kitap-1.jpg)
+    // Gerek projede uzanty (.jpg, .png) dinamik almak daha iyidir ama imdilik basitletiriyoruz.
+    var filePath = Path.Combine(uploadsFolder, $"kitap-{id}.jpg");
+
+    // 3. Dosyay klasre kopyalyoruz
+    using (var stream = new FileStream(filePath, FileMode.Create))
+    {
+        await model.File.CopyToAsync(stream);
+    }
+
+    return Results.Ok($"Resim baaryla kaydedildi! GET u noktasndan grntleyebilirsin.");
+})
+.WithName("UploadBookCover")
+.DisableAntiforgery()
+.WithOpenApi();
+app.MapGet("/books/{id}/cover", (int id) =>
+{
+    // Kaydettiimiz resmin tam yolunu buluyoruz
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"kitap-{id}.jpg");
+
+    // Eer bu kitaba ait resim yoksa hata dn
+    if (!System.IO.File.Exists(filePath))
+    {
+        return Results.NotFound("Bu kitaba ait kapak resmi bulunamad.");
+    }
+
+    // TE SHRL SATIR: Dosyay bir "File" olarak ve tipini "image/jpeg" belirterek dndryoruz
+    return Results.File(filePath, "image/jpeg");
+})
+.WithName("GetBookCover")
+.WithOpenApi();
+
+app.MapDelete("/books/{id}/cover", (int id) =>
+{
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"kitap-{id}.jpg");
+
+    if (!System.IO.File.Exists(filePath))
+    {
+        return Results.NotFound("Bu kitaba ait kapak resmi bulunamadi.");
+    }
+
+    System.IO.File.Delete(filePath);
+    return Results.NoContent();
+})
+.WithName("DeleteBookCover")
+.WithOpenApi();
 
 app.MapPost("/api/admin/bootstrap", async (
     AdminBootstrapRequest request,
@@ -234,6 +344,41 @@ app.MapGet("/api/admin/users", async (
     return Results.Ok(users.Select(MapUserToResponse));
 });
 
+app.MapPost("/api/admin/users", async (
+    CreateUserRequest request,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateUserRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    var roleErrors = ValidateUserRole(request.Role);
+    if (roleErrors.Count != 0)
+    {
+        return Results.ValidationProblem(roleErrors);
+    }
+
+    var newUserId = await userService.AddAsync(request, authorization.AdminUserId, cancellationToken);
+    var createdUser = await userService.GetByIdAsync(newUserId, cancellationToken);
+    return Results.Created(
+        $"/api/admin/users/{newUserId}",
+        createdUser is null
+            ? new { Message = "User created.", UserId = newUserId }
+            : MapUserToResponse(createdUser));
+});
+
 app.MapPost("/api/admin/books", async (
     CreateBookRequest request,
     [FromHeader(Name = AdminTokenHeader)] string? adminToken,
@@ -254,18 +399,27 @@ app.MapPost("/api/admin/books", async (
         return Results.ValidationProblem(validationErrors);
     }
 
+    GenreCatalog.TryParse(request.Genre, out var genre);
+
     var newBook = new Book
     {
         Title = request.Title,
         Author = request.Author,
-        Isbn = request.Isbn,
-        Genre = request.Genre,
+        Genre = GenreCatalog.ToStorageName(genre),
         PublishYear = request.PublishYear,
         IsAvailable = request.IsAvailable
     };
 
     var newBookId = await bookService.AddBookAsync(newBook, authorization.AdminUserId, cancellationToken);
-    return Results.Created($"/api/books/{newBookId}", new { Message = "Book added by admin.", BookId = newBookId });
+    var createdBook = await bookService.GetBookByIdAsync(newBookId, cancellationToken);
+    return Results.Created(
+        $"/api/books/{newBookId}",
+        new
+        {
+            Message = "Book added by admin.",
+            BookId = newBookId,
+            Isbn = createdBook?.Isbn
+        });
 });
 
 app.MapPut("/api/admin/books/{id:int}", async (
@@ -487,18 +641,18 @@ static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest 
         errors["author"] = ["Author cannot be longer than 120 characters."];
     }
 
-    if (string.IsNullOrWhiteSpace(request.Isbn))
-    {
-        errors["isbn"] = ["Isbn is required."];
-    }
-    else if (request.Isbn.Trim().Length > 30)
-    {
-        errors["isbn"] = ["Isbn cannot be longer than 30 characters."];
-    }
-
     if (request.PublishYear < 0 || request.PublishYear > DateTime.UtcNow.Year + 1)
     {
         errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    if (!GenreCatalog.TryParse(request.Genre, out _))
+    {
+        errors["genre"] =
+        [
+            "Genre must be one of the 22 allowed categories.",
+            $"Allowed values: {string.Join(", ", GenreCatalog.AllNames)}"
+        ];
     }
 
     return errors;
@@ -538,6 +692,19 @@ static Dictionary<string, string[]> ValidateUpdateBookRequest(UpdateBookRequest 
     if (request.PublishYear.HasValue && (request.PublishYear.Value < 0 || request.PublishYear.Value > DateTime.UtcNow.Year + 1))
     {
         errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    if (IsInvalidPatchValue(request.Genre))
+    {
+        errors["genre"] = ["Genre cannot be empty when provided."];
+    }
+    else if (request.Genre is not null && !GenreCatalog.TryParse(request.Genre, out _))
+    {
+        errors["genre"] =
+        [
+            "Genre must be one of the 22 allowed categories.",
+            $"Allowed values: {string.Join(", ", GenreCatalog.AllNames)}"
+        ];
     }
 
     return errors;
@@ -619,6 +786,29 @@ static Dictionary<string, string[]> ValidateCreateUserRequest(CreateUserRequest 
     else if (request.PasswordHash.Trim().Length < 6)
     {
         errors["passwordHash"] = ["Password must be at least 6 characters."];
+    }
+
+    var roleErrors = ValidateUserRole(request.Role);
+    foreach (var (key, messages) in roleErrors)
+    {
+        errors[key] = messages;
+    }
+
+    return errors;
+}
+
+static Dictionary<string, string[]> ValidateUserRole(string? role)
+{
+    var errors = new Dictionary<string, string[]>();
+    if (string.IsNullOrWhiteSpace(role))
+    {
+        return errors;
+    }
+
+    var allowedRoles = new[] { "student", "author", "admin" };
+    if (!allowedRoles.Contains(role.Trim().ToLowerInvariant()))
+    {
+        errors["role"] = [$"Role must be one of: {string.Join(", ", allowedRoles)}."];
     }
 
     return errors;
@@ -844,6 +1034,14 @@ internal sealed record BookResponse(
     string Genre,
     int PublishYear,
     bool IsAvailable
+);
+
+internal sealed record GenreOptionResponse(string Id, string DisplayName);
+
+internal sealed record BooksByCategoryResponse(
+    string Category,
+    string DisplayName,
+    IReadOnlyList<BookResponse> Books
 );
 
 internal sealed record UserResponse(

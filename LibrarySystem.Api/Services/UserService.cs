@@ -46,7 +46,7 @@ public sealed class UserService : IUserService
             LastName = request.LastName.Trim(),
             Email = request.Email.Trim(),
             PasswordHash = AuthService.ComputeSha256(request.PasswordHash),
-            Role = string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role.Trim(),
+            Role = NormalizeRole(string.IsNullOrWhiteSpace(request.Role) ? "Student" : request.Role),
             CreatedBy = actorUserId ?? 0
         };
 
@@ -86,7 +86,7 @@ public sealed class UserService : IUserService
 
         if (HasMeaningfulValue(request.Role))
         {
-            user.Role = request.Role!.Trim();
+            user.Role = NormalizeRole(request.Role!);
         }
 
         if (HasMeaningfulValue(request.PasswordHash))
@@ -119,5 +119,16 @@ public sealed class UserService : IUserService
     {
         return !string.IsNullOrWhiteSpace(value)
             && !string.Equals(value.Trim(), "string", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeRole(string role)
+    {
+        var trimmed = role.Trim().ToLowerInvariant();
+        return trimmed switch
+        {
+            "admin" => "Admin",
+            "author" => "Author",
+            _ => "Student"
+        };
     }
 }

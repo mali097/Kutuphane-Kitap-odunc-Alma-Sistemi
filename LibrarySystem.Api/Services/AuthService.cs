@@ -147,7 +147,11 @@ public sealed class AuthService : IAuthService
     private async Task<bool> IsUserInRoleAsync(int userId, string role, CancellationToken cancellationToken)
     {
         return await _context.Users
-            .AnyAsync(item => item.Id == userId && !item.IsDeleted && item.Role == role, cancellationToken);
+            .AnyAsync(
+                item => item.Id == userId
+                    && !item.IsDeleted
+                    && item.Role.ToLower() == role.ToLower(),
+                cancellationToken);
     }
 
     public static string ComputeSha256(string value)

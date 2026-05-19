@@ -1,15 +1,12 @@
-using System.Collections.Concurrent;
-using System.Threading;
 using LibrarySystem.Api.Contracts;
 using LibrarySystem.Api.Data;
+using LibrarySystem.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Api.Services;
 
 public sealed class WeeklyRecommendationService : IWeeklyRecommendationService
 {
-    private static readonly ConcurrentDictionary<int, WeeklyRecommendationItem> Items = new();
-    private static int _currentId;
     private readonly LibraryDbContext _context;
 
     public WeeklyRecommendationService(LibraryDbContext context)
@@ -35,46 +32,50 @@ public sealed class WeeklyRecommendationService : IWeeklyRecommendationService
         var weekStart = GetWeekStart(createdAt);
         var weekEnd = weekStart.AddDays(6);
 
-        var id = Interlocked.Increment(ref _currentId);
-        var recommendationItem = new WeeklyRecommendationItem(
-            id,
-            request.BookTitle.Trim(),
-            request.Idea.Trim(),
-            authorUserId,
-            $"{author.FirstName} {author.LastName}".Trim(),
-            createdAt,
-            weekStart,
-            weekEnd);
+        var recommendation = new WeeklyRecommendation
+        {
+            BookTitle = request.BookTitle.Trim(),
+            Idea = request.Idea.Trim(),
+            AuthorUserId = authorUserId,
+            AuthorName = $"{author.FirstName} {author.LastName}".Trim(),
+            WeekStartDate = weekStart,
+            WeekEndDate = weekEnd,
+            CreatedBy = authorUserId
+        };
 
-        Items[id] = recommendationItem;
-        return ToResponse(recommendationItem);
+        _context.WeeklyRecommendations.Add(recommendation);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return ToResponse(recommendation);
     }
 
-    public Task<List<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
+    public async Task<List<WeeklyRecommendationResponse>> GetCurrentWeekRecommendationsAsync(
         CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         var weekStart = GetWeekStart(now);
         var weekEnd = weekStart.AddDays(6);
 
-        var results = Items.Values
-            .Where(item => item.WeekStartDate == weekStart && item.WeekEndDate == weekEnd)
-            .OrderByDescending(item => item.CreatedAt)
-            .Select(ToResponse)
-            .ToList();
+        var recommendations = await _context.WeeklyRecommendations
+            .AsNoTracking()
+            .Where(item => !item.IsDeleted
+                && item.WeekStartDate == weekStart
+                && item.WeekEndDate == weekEnd)
+            .OrderByDescending(item => item.CreatedDate)
+            .ToListAsync(cancellationToken);
 
-        return Task.FromResult(results);
+        return recommendations.Select(ToResponse).ToList();
     }
 
-    private static WeeklyRecommendationResponse ToResponse(WeeklyRecommendationItem item)
+    private static WeeklyRecommendationResponse ToResponse(WeeklyRecommendation item)
     {
         return new WeeklyRecommendationResponse(
-            item.RecommendationId,
+            item.Id,
             item.BookTitle,
             item.Idea,
             item.AuthorUserId,
             item.AuthorName,
-            item.CreatedAt,
+            item.CreatedDate,
             item.WeekStartDate,
             item.WeekEndDate
         );
@@ -86,15 +87,4 @@ public sealed class WeeklyRecommendationService : IWeeklyRecommendationService
         var difference = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
         return date.AddDays(-difference);
     }
-
-    private sealed record WeeklyRecommendationItem(
-        int RecommendationId,
-        string BookTitle,
-        string Idea,
-        int AuthorUserId,
-        string AuthorName,
-        DateTime CreatedAt,
-        DateTime WeekStartDate,
-        DateTime WeekEndDate
-    );
 }

@@ -31,9 +31,9 @@ public sealed class BookService : IBookService
                     || book.Isbn.Contains(search));
             }
 
-            if (!string.IsNullOrWhiteSpace(query.Genre))
+            if (!string.IsNullOrWhiteSpace(query.Genre) && GenreCatalog.TryParse(query.Genre, out var filterGenre))
             {
-                var genre = query.Genre.Trim();
+                var genre = GenreCatalog.ToStorageName(filterGenre);
                 bookQuery = bookQuery.Where(book => book.Genre == genre);
             }
 
@@ -65,11 +65,19 @@ public sealed class BookService : IBookService
     {
         newBook.Title = newBook.Title.Trim();
         newBook.Author = newBook.Author.Trim();
-        newBook.Isbn = newBook.Isbn.Trim();
-        newBook.Genre = newBook.Genre.Trim();
+        if (!GenreCatalog.TryParse(newBook.Genre, out var genre))
+        {
+            throw new ArgumentException("Book genre must be one of the 22 allowed categories.", nameof(newBook));
+        }
+
+        newBook.Genre = GenreCatalog.ToStorageName(genre);
         newBook.CreatedBy = actorUserId ?? 0;
+        newBook.Isbn = string.Empty;
 
         _context.Books.Add(newBook);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        newBook.Isbn = IsbnGenerator.GenerateForBookId(newBook.Id);
         await _context.SaveChangesAsync(cancellationToken);
         return newBook.Id;
     }
@@ -101,7 +109,12 @@ public sealed class BookService : IBookService
 
         if (HasMeaningfulValue(request.Genre))
         {
-            book.Genre = request.Genre!.Trim();
+            if (!GenreCatalog.TryParse(request.Genre, out var genre))
+            {
+                throw new ArgumentException("Book genre must be one of the 22 allowed categories.", nameof(request));
+            }
+
+            book.Genre = GenreCatalog.ToStorageName(genre);
         }
 
         if (request.PublishYear.HasValue)
