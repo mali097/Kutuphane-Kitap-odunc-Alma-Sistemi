@@ -22,6 +22,9 @@ public partial class FavoritesPage : ContentPage
         FavoritesList.ItemsSource = favs;
     }
 
+    private async void Back_Clicked(object sender, EventArgs e)
+        => await Navigation.PopAsync();
+
     private async void RemoveFav_Clicked(object sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is FavoriteBook fav)
@@ -35,6 +38,15 @@ public partial class FavoritesPage : ContentPage
         }
     }
 
-    private async void OpenSettings_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new UserPanelPage());
+    private async void TabHome_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToHomeAsync();
+
+    private async void TabCategories_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToCategoriesAsync();
+
+    private async void TabNotifications_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToNotificationsAsync();
+
+    private async void TabSettings_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToSettingsAsync();
 }

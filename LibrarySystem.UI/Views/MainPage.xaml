@@ -23,7 +23,7 @@
 
         <!-- Geniş arama; menü ve arama içi filtre yok -->
         <Grid Grid.Row="0" Padding="14,14,14,10" Background="{StaticResource HeaderGradient}"
-              ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="12">
+              ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="12">
 
             <Border Grid.Row="0" Grid.Column="0"
                     Stroke="#FFFFFF33"
@@ -31,19 +31,16 @@
                     StrokeShape="RoundRectangle 20"
                     Padding="12,10"
                     MinimumHeightRequest="56">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
-                    <Label Text="🔎" TextColor="White" VerticalOptions="Center" FontSize="18" />
-                    <SearchBar x:Name="KitapSearchBar"
-                               Grid.Column="1"
-                               Placeholder="Kitap, yazar veya ISBN ara"
-                               TextColor="White"
-                               PlaceholderColor="#E8E0FF"
-                               BackgroundColor="Transparent"
-                               CancelButtonColor="White"
-                               FontSize="16"
-                               HeightRequest="44"
-                               TextChanged="SearchBar_TextChanged" />
-                </Grid>
+                <SearchBar x:Name="KitapSearchBar"
+                           Placeholder="Kitap, yazar veya ISBN ara"
+                           TextColor="White"
+                           PlaceholderColor="#E8E0FF"
+                           BackgroundColor="Transparent"
+                           CancelButtonColor="White"
+                           FontSize="16"
+                           HeightRequest="44"
+                           VerticalOptions="Center"
+                           TextChanged="SearchBar_TextChanged" />
             </Border>
 
             <Border Grid.Row="0" Grid.Column="1"
@@ -54,33 +51,29 @@
                     <Border WidthRequest="26" HeightRequest="26" StrokeShape="RoundRectangle 13" BackgroundColor="#FFFFFF33">
                         <Label Text="👤" HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
-                    <Label Text="Profil" TextColor="White" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label x:Name="ProfileUsernameLabel"
+                           Text="Profil"
+                           TextColor="White"
+                           FontAttributes="Bold"
+                           VerticalOptions="Center"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="1" />
                 </HorizontalStackLayout>
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="Profile_Clicked" />
                 </Border.GestureRecognizers>
             </Border>
 
-            <Border Grid.Row="0" Grid.Column="2"
-                    BackgroundColor="#FFFFFF33"
-                    StrokeShape="RoundRectangle 14"
-                    Padding="10,8">
-                <Label Text="🔔" TextColor="White" FontSize="18" />
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="Notifications_Clicked" />
-                </Border.GestureRecognizers>
-            </Border>
-
             <Label x:Name="WelcomeLabel"
-                   Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                   Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                    Text=""
                    TextColor="White"
                    FontAttributes="Bold"
                    FontSize="14" />
         </Grid>
 
-        <!-- Üst: yazar düşünceleri; alt: en çok okunan; sonra katalog -->
-        <ScrollView Grid.Row="1">
+        <!-- Ana sayfa içeriği -->
+        <ScrollView x:Name="HomePanel" Grid.Row="1">
             <VerticalStackLayout Padding="14" Spacing="14">
 
                 <Border BackgroundColor="#FFF9F2"
@@ -275,20 +268,45 @@
             </VerticalStackLayout>
         </ScrollView>
 
+        <!-- Kategoriler sekmesi (fotoğraftaki 2 sütunlu grid) -->
+        <ScrollView x:Name="CategoriesPanel"
+                    Grid.Row="1"
+                    IsVisible="False"
+                    BackgroundColor="#F5F5F8">
+            <VerticalStackLayout Padding="14,10" Spacing="12">
+                <Grid ColumnDefinitions="*,Auto" Padding="2,0">
+                    <Label Text="Tüm Kategoriler"
+                           FontAttributes="Bold"
+                           FontSize="15"
+                           TextColor="#1B1530"
+                           VerticalOptions="Center" />
+                    <Label x:Name="CategoryCountLabel"
+                           Grid.Column="1"
+                           Text="22 kategori"
+                           FontSize="13"
+                           TextColor="#6B6578"
+                           VerticalOptions="Center" />
+                </Grid>
+                <Grid x:Name="CategoriesGrid" />
+            </VerticalStackLayout>
+        </ScrollView>
+
         <Border Grid.Row="2"
                 BackgroundColor="#F3F3F6"
                 StrokeShape="RoundRectangle 24"
                 Padding="14,10"
                 Margin="14,8,14,14">
             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
-                <Button Grid.Column="0"
+                <Button x:Name="TabHomeBtn"
+                        Grid.Column="0"
                         Text="🏠&#10;Ana Sayfa"
                         BackgroundColor="#FFFFFF"
                         TextColor="#2B1B4F"
                         CornerRadius="18"
                         FontSize="11"
                         Clicked="TabHome_Clicked" />
-                <Button Grid.Column="1"
+                <Button x:Name="TabCategoriesBtn"
+                        Grid.Column="1"
                         Text="🗂️&#10;Kategoriler"
                         BackgroundColor="Transparent"
                         TextColor="#6C6F7A"

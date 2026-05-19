@@ -113,19 +113,15 @@ public partial class NotificationsPage : ContentPage
     private void SetTabVisual(NotifTab tab)
     {
         _currentTab = tab;
-        TabAll.FontAttributes = tab == NotifTab.All ? FontAttributes.Bold : FontAttributes.None;
-        TabAll.TextColor = tab == NotifTab.All ? Color.FromArgb("#5E4BB6") : Color.FromArgb("#8A8798");
-        TabUnread.FontAttributes = tab == NotifTab.Unread ? FontAttributes.Bold : FontAttributes.None;
-        TabUnread.TextColor = tab == NotifTab.Unread ? Color.FromArgb("#5E4BB6") : Color.FromArgb("#8A8798");
-        TabRead.FontAttributes = tab == NotifTab.Read ? FontAttributes.Bold : FontAttributes.None;
-        TabRead.TextColor = tab == NotifTab.Read ? Color.FromArgb("#5E4BB6") : Color.FromArgb("#8A8798");
+        var active = Colors.White;
+        var inactive = Color.FromArgb("#E8E0FF");
 
-        TabUnderline.Margin = tab switch
-        {
-            NotifTab.Unread => new Thickness(72, 0, 0, 0),
-            NotifTab.Read => new Thickness(168, 0, 0, 0),
-            _ => new Thickness(4, 0, 0, 0)
-        };
+        TabAll.FontAttributes = tab == NotifTab.All ? FontAttributes.Bold : FontAttributes.None;
+        TabAll.TextColor = tab == NotifTab.All ? active : inactive;
+        TabUnread.FontAttributes = tab == NotifTab.Unread ? FontAttributes.Bold : FontAttributes.None;
+        TabUnread.TextColor = tab == NotifTab.Unread ? active : inactive;
+        TabRead.FontAttributes = tab == NotifTab.Read ? FontAttributes.Bold : FontAttributes.None;
+        TabRead.TextColor = tab == NotifTab.Read ? active : inactive;
     }
 
     private void TabAll_Tapped(object? sender, EventArgs e)
@@ -166,6 +162,15 @@ public partial class NotificationsPage : ContentPage
     private async void Back_Clicked(object? sender, EventArgs e)
         => await Navigation.PopAsync();
 
-    private async void Settings_Clicked(object? sender, EventArgs e)
-        => await Navigation.PushAsync(new UserPanelPage());
+    private async void TabHome_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToHomeAsync();
+
+    private async void TabCategories_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToCategoriesAsync();
+
+    private async void TabFavorites_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToFavoritesAsync();
+
+    private async void TabSettings_Clicked(object sender, EventArgs e)
+        => await TabNavigation.GoToSettingsAsync();
 }

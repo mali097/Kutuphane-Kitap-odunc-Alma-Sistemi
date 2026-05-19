@@ -8,17 +8,14 @@ public partial class MainPage : ContentPage
 {
     private readonly IBookService _bookService;
     private List<Book> _allBooks = new();
-    private string? _selectedCategory;
-
-    private static readonly string[] CategoryOptions =
-    {
-        "Tümü", "Roman", "Bilim", "Tarih", "Teknoloji", "Felsefe", "Çocuk", "Biyografi"
-    };
+    private List<BookCategoryItem> _categories = new();
+    private int? _selectedCategoryId;
 
     public MainPage()
     {
         InitializeComponent();
         _bookService = new BookService();
+        _categories = BookCategories.CreateListWithCounts(Enumerable.Empty<Book>(), useDemoCountsWhenEmpty: true);
 
         QuotesCollection.ItemsSource = new List<QuoteCard>
         {
@@ -40,8 +37,55 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        WelcomeLabel.Text = $"👋 Hoş geldin, {SessionHelper.CurrentUser?.FullName ?? "Kullanıcı"}!";
+        var user = SessionHelper.CurrentUser;
+        WelcomeLabel.Text = $"👋 Hoş geldin, {user?.Username ?? "Kullanıcı"}!";
+        ProfileUsernameLabel.Text = user?.Username ?? "Profil";
+        ApplyCategoryFromNavigation();
         await LoadBooksAsync();
+        await LoadCategoriesAsync();
+
+        if (MainTabNavigationState.OpenCategoriesTab)
+        {
+            MainTabNavigationState.OpenCategoriesTab = false;
+            ShowCategoriesTab();
+        }
+        else
+            ShowHomeTab();
+    }
+
+    private Task LoadCategoriesAsync()
+    {
+        _categories = BookCategories.CreateListWithCounts(_allBooks, useDemoCountsWhenEmpty: true);
+        CategoryCountLabel.Text = $"{_categories.Count} kategori";
+        CategoryUiHelper.FillTwoColumnGrid(CategoriesGrid, _categories, OpenCategoryAsync);
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenCategoryAsync(BookCategoryItem category)
+    {
+        CategoryFilterState.SelectedCategoryId = category.Id;
+        await Shell.Current.GoToAsync(nameof(CategoryDetailPage));
+    }
+
+    private void ShowHomeTab()
+    {
+        HomePanel.IsVisible = true;
+        CategoriesPanel.IsVisible = false;
+        TabHomeBtn.BackgroundColor = Color.FromArgb("#FFFFFF");
+        TabHomeBtn.TextColor = Color.FromArgb("#2B1B4F");
+        TabCategoriesBtn.BackgroundColor = Colors.Transparent;
+        TabCategoriesBtn.TextColor = Color.FromArgb("#6C6F7A");
+    }
+
+    private void ShowCategoriesTab()
+    {
+        HomePanel.IsVisible = false;
+        CategoriesPanel.IsVisible = true;
+        TabCategoriesBtn.BackgroundColor = Color.FromArgb("#FFFFFF");
+        TabCategoriesBtn.TextColor = Color.FromArgb("#5E4BB6");
+        TabHomeBtn.BackgroundColor = Colors.Transparent;
+        TabHomeBtn.TextColor = Color.FromArgb("#6C6F7A");
+        CategoryUiHelper.FillTwoColumnGrid(CategoriesGrid, _categories, OpenCategoryAsync);
     }
 
     private async Task LoadBooksAsync()
@@ -63,11 +107,8 @@ public partial class MainPage : ContentPage
     {
         IEnumerable<Book> q = _allBooks;
 
-        if (!string.IsNullOrEmpty(_selectedCategory) && _selectedCategory != "Tümü")
-        {
-            q = q.Where(b =>
-                b.Category.Equals(_selectedCategory, StringComparison.OrdinalIgnoreCase));
-        }
+        if (_selectedCategoryId is int categoryId)
+            q = q.Where(b => BookCategories.MatchesBook(categoryId, b.Category));
 
         var term = KitapSearchBar.Text?.Trim();
         if (!string.IsNullOrWhiteSpace(term))
@@ -90,7 +131,8 @@ public partial class MainPage : ContentPage
         if (e.CurrentSelection.FirstOrDefault() is Book book)
         {
             BooksCollectionView.SelectedItem = null;
-            await Navigation.PushAsync(new BookDetailPage(book));
+            BookNavigationState.PendingBook = book;
+            await Shell.Current.GoToAsync(nameof(BookDetailPage));
         }
     }
 
@@ -125,10 +167,10 @@ public partial class MainPage : ContentPage
     }
 
     private async void Favorites_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new FavoritesPage());
+        => await TabNavigation.GoToFavoritesAsync();
 
     private async void Profile_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new UserPanelPage());
+        => await Shell.Current.GoToAsync(nameof(UserPanelPage));
 
     private async void Logout_Clicked(object sender, EventArgs e)
     {
@@ -140,26 +182,28 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private async void TabCategories_Clicked(object sender, EventArgs e)
-    {
-        var pick = await DisplayActionSheet("Kategori seç", "İptal", null, CategoryOptions);
-        if (string.IsNullOrEmpty(pick) || pick == "İptal")
-            return;
+    private void TabCategories_Clicked(object sender, EventArgs e)
+        => ShowCategoriesTab();
 
-        _selectedCategory = pick == "Tümü" ? null : pick;
+    public void ApplyCategoryFromNavigation()
+    {
+        if (CategoryFilterState.SelectedCategoryId is not int id) return;
+        _selectedCategoryId = id;
+        CategoryFilterState.SelectedCategoryId = null;
+
+        var name = BookCategories.GetById(id)?.Name ?? "Kategori";
+        WelcomeLabel.Text = $"📂 {name} kitapları";
         ApplyBookFilter();
     }
 
-    private async void Notifications_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new NotificationsPage());
-
     private async void TabNotifications_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new NotificationsPage());
+        => await TabNavigation.GoToNotificationsAsync();
 
     private async void TabSettings_Clicked(object sender, EventArgs e)
-        => await Navigation.PushAsync(new UserPanelPage());
+        => await TabNavigation.GoToSettingsAsync();
 
-    private void TabHome_Clicked(object sender, EventArgs e) { }
+    private void TabHome_Clicked(object sender, EventArgs e)
+        => ShowHomeTab();
 
     private sealed record QuoteCard(string Author, string Text);
     private sealed record PopularBookCard(int Rank, string Title, string Author, string Rating, string RowColor);

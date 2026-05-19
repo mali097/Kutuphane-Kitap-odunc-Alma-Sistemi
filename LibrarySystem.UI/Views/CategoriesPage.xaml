@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.CategoriesPage"
+             Title="Kategoriler"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F5F5F8">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0"
+              Background="{StaticResource HeaderGradient}"
+              Padding="14,48,14,16"
+              RowDefinitions="Auto,Auto"
+              RowSpacing="14">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Button Text="←" FontSize="20" TextColor="White" BackgroundColor="Transparent" Padding="4" Clicked="Back_Clicked" />
+                <Label Grid.Column="1" Text="Kategoriler" TextColor="White" FontSize="18" FontAttributes="Bold"
+                       HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                <Button Grid.Column="2" Text="🔎" FontSize="18" TextColor="White" BackgroundColor="Transparent" Padding="4" Clicked="Search_Clicked" />
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Padding="4,0">
+                <Label Text="Tüm Kategoriler" TextColor="White" FontAttributes="Bold" FontSize="15" VerticalOptions="Center" />
+                <Label x:Name="CategoryCountLabel" Grid.Column="1" Text="22 kategori" TextColor="#E8E0FF" FontSize="13" VerticalOptions="Center" />
+            </Grid>
+        </Grid>
+
+        <ScrollView Grid.Row="1" Margin="14,8,14,0">
+            <Grid x:Name="CategoriesGrid" />
+        </ScrollView>
+
+        <Border Grid.Row="2" BackgroundColor="#F3F3F6" StrokeShape="RoundRectangle 24" Padding="14,10" Margin="14,8,14,14">
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Button Grid.Column="0" Text="🏠&#10;Ana Sayfa" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabHome_Clicked" />
+                <Button Grid.Column="1" Text="🗂️&#10;Kategoriler" BackgroundColor="#FFFFFF" TextColor="#5E4BB6" FontAttributes="Bold" CornerRadius="18" FontSize="11" />
+                <Button Grid.Column="2" Text="🔖&#10;Favorilerim" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabFavorites_Clicked" />
+                <Button Grid.Column="3" Text="🔔&#10;Bildirimler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabNotifications_Clicked" />
+                <Button Grid.Column="4" Text="⚙️&#10;Ayarlar" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabSettings_Clicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

@@ -1,4 +1,5 @@
 using LibrarySystem.UI.Helpers;
+using LibrarySystem.UI.Models;
 using LibrarySystem.UI.Services;
 using Book = LibrarySystem.UI.Models.Book;
 
@@ -9,8 +10,7 @@ public partial class AddEditBookPage : ContentPage
     private readonly IBookService _bookService;
     private readonly Book? _existingBook;
     private readonly bool _isEdit;
-    private readonly List<string> _categories =
-        new() { "Roman", "Bilim", "Tarih", "Teknoloji", "Felsefe", "Çocuk", "Biyografi" };
+    private readonly List<string> _categories = BookCategories.DisplayNames.ToList();
 
     public AddEditBookPage() : this(null) { }
 
@@ -35,7 +35,7 @@ public partial class AddEditBookPage : ContentPage
             PublisherEntry.Text = book.Publisher;
             DescEditor.Text = book.Description;
             IsAvailableCheckBox.IsChecked = book.IsAvailable;
-            CategoryPicker.SelectedIndex = _categories.IndexOf(book.Category);
+            CategoryPicker.SelectedIndex = ResolveCategoryIndex(book.Category);
         }
         else
         {
@@ -106,5 +106,24 @@ public partial class AddEditBookPage : ContentPage
     {
         ErrorLabel.Text = msg;
         ErrorLabel.IsVisible = true;
+    }
+
+    private static int ResolveCategoryIndex(string? bookCategory)
+    {
+        if (string.IsNullOrWhiteSpace(bookCategory)) return -1;
+
+        for (var i = 0; i < BookCategories.DisplayNames.Count; i++)
+        {
+            if (BookCategories.DisplayNames[i].Equals(bookCategory, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        foreach (var cat in BookCategories.All)
+        {
+            if (BookCategories.MatchesBook(cat.Id, bookCategory))
+                return cat.Id - 1;
+        }
+
+        return -1;
     }
 }
