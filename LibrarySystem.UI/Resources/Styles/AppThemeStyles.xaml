@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- LoginPage hariç tüm sayfalar bu varsayılan arka planı kullanır -->
+    <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource PageBackgroundColorLight},
+                                       Dark={StaticResource PageBackgroundColorDark}}" />
+    </Style>
+
+    <!-- ===== Kart stilleri ===== -->
+    <Style x:Key="ThemedCard" TargetType="Border">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource CardBackgroundColorLight},
+                                       Dark={StaticResource CardBackgroundColorDark}}" />
+        <Setter Property="Stroke"
+                Value="{AppThemeBinding Light={StaticResource CardStrokeColorLight},
+                                       Dark={StaticResource CardStrokeColorDark}}" />
+    </Style>
+
+    <Style x:Key="ThemedCardAlt" TargetType="Border">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource CardAltBackgroundColorLight},
+                                       Dark={StaticResource CardAltBackgroundColorDark}}" />
+        <Setter Property="Stroke"
+                Value="{AppThemeBinding Light={StaticResource CardStrokeColorLight},
+                                       Dark={StaticResource CardStrokeColorDark}}" />
+    </Style>
+
+    <Style x:Key="ThemedListRow" TargetType="Border">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource ListRowBackgroundColorLight},
+                                       Dark={StaticResource ListRowBackgroundColorDark}}" />
+        <Setter Property="Stroke"
+                Value="{AppThemeBinding Light={StaticResource CardStrokeColorLight},
+                                       Dark={StaticResource CardStrokeColorDark}}" />
+    </Style>
+
+    <!-- ===== Alt sekme (tab bar) ===== -->
+    <Style x:Key="ThemedTabBar" TargetType="Border">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource TabBarBackgroundColorLight},
+                                       Dark={StaticResource TabBarBackgroundColorDark}}" />
+        <Setter Property="StrokeThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="ThemedTabInactive" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource TabInactiveColorLight},
+                                       Dark={StaticResource TabInactiveColorDark}}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <!-- ===== Tipografi (yardımcı renk kaynakları için style) ===== -->
+    <Style x:Key="ThemedTitle" TargetType="Label">
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource TextPrimaryColorLight},
+                                       Dark={StaticResource TextPrimaryColorDark}}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="ThemedSubtitle" TargetType="Label">
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource TextSecondaryColorLight},
+                                       Dark={StaticResource TextSecondaryColorDark}}" />
+    </Style>
+
+</ResourceDictionary>

@@ -22,13 +22,17 @@ public partial class CategoryDetailPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        ThemeHelper.ApplyBottomTab(
+            TabCategoriesBtn,
+            TabHomeBtn, TabFavoritesBtn, TabNotificationsBtn, TabSettingsBtn);
+
         _category = _passedCategory
             ?? (CategoryFilterState.SelectedCategoryId is int id ? BookCategories.GetById(id) : null);
 
         if (_category == null)
         {
             await DisplayAlert("Kategori", "Kategori bulunamadı.", "Tamam");
-            await Shell.Current.GoToAsync("..");
+            await NavigateBackToCategoriesAsync();
             return;
         }
 
@@ -54,8 +58,20 @@ public partial class CategoryDetailPage : ContentPage
             .ToList();
     }
 
+    private async Task NavigateBackToCategoriesAsync()
+    {
+        MainTabNavigationState.OpenCategoriesTab = true;
+        await Shell.Current.GoToAsync("..");
+    }
+
     private async void Back_Clicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("..");
+        => await NavigateBackToCategoriesAsync();
+
+    protected override bool OnBackButtonPressed()
+    {
+        MainTabNavigationState.OpenCategoriesTab = true;
+        return base.OnBackButtonPressed();
+    }
 
     private async void Filter_Clicked(object sender, EventArgs e)
         => await DisplayAlert("Filtre", "Sıralama ve filtre seçenekleri yakında eklenecek.", "Tamam");

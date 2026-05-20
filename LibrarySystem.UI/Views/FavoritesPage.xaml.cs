@@ -17,6 +17,10 @@ public partial class FavoritesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        ThemeHelper.ApplyBottomTab(
+            TabFavoritesBtn,
+            TabHomeBtn, TabCategoriesBtn, TabNotificationsBtn, TabSettingsBtn);
+
         if (SessionHelper.CurrentUser == null) return;
         var favs = await _bookService.GetFavoritesAsync(SessionHelper.CurrentUser.Id);
         FavoritesList.ItemsSource = favs;

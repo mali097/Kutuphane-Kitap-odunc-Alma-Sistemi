@@ -2,8 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="LibrarySystem.UI.Views.CategoryDetailPage"
-             Shell.NavBarIsVisible="False"
-             BackgroundColor="#F5F5F8">
+             Shell.NavBarIsVisible="False">
 
     <ContentPage.Resources>
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
@@ -46,8 +45,7 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="14,8,14,0" Spacing="12">
 
-                <Border BackgroundColor="White"
-                        Stroke="#E8E4DC"
+                <Border Style="{StaticResource ThemedCard}"
                         StrokeShape="RoundRectangle 18"
                         Padding="16">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
@@ -65,13 +63,13 @@
                             <Label x:Name="HeroNameLabel"
                                    FontAttributes="Bold"
                                    FontSize="18"
-                                   TextColor="#1B1530" />
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
                             <Label x:Name="HeroCountLabel"
                                    FontSize="13"
-                                   TextColor="#6B6578" />
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}" />
                             <Label x:Name="HeroDescriptionLabel"
                                    FontSize="13"
-                                   TextColor="#4A4758"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                    LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </Grid>
@@ -84,14 +82,13 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,10"
-                                    BackgroundColor="White"
-                                    Stroke="#E8E4DC"
+                                    Style="{StaticResource ThemedCard}"
                                     StrokeShape="RoundRectangle 16"
                                     Padding="12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                     <Border WidthRequest="52"
                                             HeightRequest="72"
-                                            BackgroundColor="#E8E0F5"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource AccentSoftPurpleColorLight}, Dark={StaticResource AccentSoftPurpleColorDark}}"
                                             StrokeShape="RoundRectangle 10"
                                             VerticalOptions="Center">
                                         <Label Text="📕"
@@ -103,17 +100,17 @@
                                         <Label Text="{Binding Book.Title}"
                                                FontAttributes="Bold"
                                                FontSize="15"
-                                               TextColor="#1B1530"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                                LineBreakMode="TailTruncation" />
                                         <Label Text="{Binding Book.Author}"
                                                FontSize="13"
-                                               TextColor="#6B6578"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                                LineBreakMode="TailTruncation" />
                                         <HorizontalStackLayout Spacing="4">
                                             <Label Text="★★★★★" TextColor="#FFB800" FontSize="11" />
                                             <Label Text="{Binding RatingDisplay}"
                                                    FontSize="12"
-                                                   TextColor="#4A4758"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                                    FontAttributes="Bold" />
                                         </HorizontalStackLayout>
                                     </VerticalStackLayout>
@@ -138,16 +135,16 @@
         </ScrollView>
 
         <Border Grid.Row="2"
-                BackgroundColor="#F3F3F6"
+                Style="{StaticResource ThemedTabBar}"
                 StrokeShape="RoundRectangle 24"
                 Padding="14,10"
                 Margin="14,8,14,14">
             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
-                <Button Grid.Column="0" Text="🏠&#10;Ana Sayfa" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabHome_Clicked" />
-                <Button Grid.Column="1" Text="🗂️&#10;Kategoriler" BackgroundColor="#FFFFFF" TextColor="#5E4BB6" FontAttributes="Bold" CornerRadius="18" FontSize="11" Clicked="TabCategories_Clicked" />
-                <Button Grid.Column="2" Text="🔖&#10;Favorilerim" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabFavorites_Clicked" />
-                <Button Grid.Column="3" Text="🔔&#10;Bildirimler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabNotifications_Clicked" />
-                <Button Grid.Column="4" Text="⚙️&#10;Ayarlar" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabSettings_Clicked" />
+                <Button x:Name="TabHomeBtn" Grid.Column="0" Text="🏠&#10;Ana Sayfa" Style="{StaticResource ThemedTabInactive}" Clicked="TabHome_Clicked" />
+                <Button x:Name="TabCategoriesBtn" Grid.Column="1" Text="🗂️&#10;Kategoriler" Style="{StaticResource ThemedTabInactive}" Clicked="TabCategories_Clicked" />
+                <Button x:Name="TabFavoritesBtn" Grid.Column="2" Text="🔖&#10;Favorilerim" Style="{StaticResource ThemedTabInactive}" Clicked="TabFavorites_Clicked" />
+                <Button x:Name="TabNotificationsBtn" Grid.Column="3" Text="🔔&#10;Bildirimler" Style="{StaticResource ThemedTabInactive}" Clicked="TabNotifications_Clicked" />
+                <Button x:Name="TabSettingsBtn" Grid.Column="4" Text="⚙️&#10;Ayarlar" Style="{StaticResource ThemedTabInactive}" Clicked="TabSettings_Clicked" />
             </Grid>
         </Border>
     </Grid>

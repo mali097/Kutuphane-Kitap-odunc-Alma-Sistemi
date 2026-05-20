@@ -23,6 +23,9 @@ public partial class NotificationsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        ThemeHelper.ApplyBottomTab(
+            TabNotificationsBtn,
+            TabHomeBtn, TabCategoriesBtn, TabFavoritesBtn, TabSettingsBtn);
         await ReloadAsync();
     }
 

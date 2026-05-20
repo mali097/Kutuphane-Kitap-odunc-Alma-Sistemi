@@ -63,22 +63,16 @@ public partial class UserPanelPage : ContentPage
         HistoryBorrows.HeightRequest = Math.Clamp(100 + history.Count * 88, 100, 320);
     }
 
-    private async void ContactUs_Tapped(object? sender, EventArgs e)
-        => await DisplayAlert("Bize ulaşın",
-            "Görüş ve önerilerin için: destek@kutuphane-ornek.com adresine yazabilirsin.",
-            "Tamam");
-
-    private async void LanguageTheme_Tapped(object? sender, EventArgs e)
+    private async void Theme_Tapped(object? sender, EventArgs e)
     {
-        var pick = await DisplayActionSheet("Dil ve tema", "İptal", null, "Açık tema", "Koyu tema", "Sistem varsayılanı");
-        if (pick is null || pick == "İptal") return;
+        var pick = await DisplayActionSheet(
+            "Tema", "İptal", null,
+            "Açık tema", "Koyu tema", "Sistem varsayılanı");
 
-        if (pick == "Açık tema")
-            Application.Current!.UserAppTheme = AppTheme.Light;
-        else if (pick == "Koyu tema")
-            Application.Current!.UserAppTheme = AppTheme.Dark;
-        else
-            Application.Current!.UserAppTheme = AppTheme.Unspecified;
+        var choice = ThemeHelper.ChoiceFromActionSheet(pick);
+        if (choice is null) return;
+
+        ThemeHelper.ApplyThemeChoice(choice);
     }
 
     private async void NotificationSettings_Tapped(object? sender, EventArgs e)

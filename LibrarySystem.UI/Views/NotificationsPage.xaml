@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="LibrarySystem.UI.Views.NotificationsPage"
              Title="Bildirimler"
-             Shell.NavBarIsVisible="False"
-             BackgroundColor="#F5F5F8">
+             Shell.NavBarIsVisible="False">
 
     <ContentPage.Resources>
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
@@ -75,14 +74,13 @@
                         x:Name="NotificationsList"
                         Margin="12,8,12,0"
                         SelectionMode="None"
-                        BackgroundColor="#F5F5F8"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}"
                         EmptyView="Henüz teslim veya iade bildirimin yok.">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Border Margin="0,0,0,12"
                             Padding="14,12"
-                            BackgroundColor="White"
-                            Stroke="#E8E4DC"
+                            Style="{StaticResource ThemedCard}"
                             StrokeShape="RoundRectangle 16">
                         <Border.Shadow>
                             <Shadow Brush="#00000018" Offset="0,4" Radius="12" Opacity="0.35" />
@@ -105,18 +103,18 @@
                             <Label Grid.Column="1"
                                    Text="{Binding Title}"
                                    FontAttributes="Bold"
-                                   TextColor="#1B1530"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                    FontSize="15" />
                             <Label Grid.Column="2"
                                    Text="{Binding RelativeTimeText}"
-                                   TextColor="#9A96A8"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}"
                                    FontSize="12"
                                    VerticalOptions="Start" />
                             <Label Grid.Row="1"
                                    Grid.Column="1"
                                    Grid.ColumnSpan="2"
                                    Text="{Binding Detail}"
-                                   TextColor="#6B6578"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                    FontSize="13"
                                    LineBreakMode="WordWrap" />
                             <Ellipse Grid.Row="2"
@@ -133,16 +131,16 @@
         </CollectionView>
 
         <Border Grid.Row="2"
-                BackgroundColor="#F3F3F6"
+                Style="{StaticResource ThemedTabBar}"
                 StrokeShape="RoundRectangle 24"
                 Padding="14,10"
                 Margin="14,8,14,14">
             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
-                <Button Grid.Column="0" Text="🏠&#10;Ana Sayfa" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabHome_Clicked" />
-                <Button Grid.Column="1" Text="🗂️&#10;Kategoriler" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabCategories_Clicked" />
-                <Button Grid.Column="2" Text="🔖&#10;Favorilerim" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabFavorites_Clicked" />
-                <Button Grid.Column="3" Text="🔔&#10;Bildirimler" BackgroundColor="#FFFFFF" TextColor="#5E4BB6" FontAttributes="Bold" CornerRadius="18" FontSize="11" />
-                <Button Grid.Column="4" Text="⚙️&#10;Ayarlar" BackgroundColor="Transparent" TextColor="#6C6F7A" FontSize="11" Clicked="TabSettings_Clicked" />
+                <Button x:Name="TabHomeBtn" Grid.Column="0" Text="🏠&#10;Ana Sayfa" Style="{StaticResource ThemedTabInactive}" Clicked="TabHome_Clicked" />
+                <Button x:Name="TabCategoriesBtn" Grid.Column="1" Text="🗂️&#10;Kategoriler" Style="{StaticResource ThemedTabInactive}" Clicked="TabCategories_Clicked" />
+                <Button x:Name="TabFavoritesBtn" Grid.Column="2" Text="🔖&#10;Favorilerim" Style="{StaticResource ThemedTabInactive}" Clicked="TabFavorites_Clicked" />
+                <Button x:Name="TabNotificationsBtn" Grid.Column="3" Text="🔔&#10;Bildirimler" Style="{StaticResource ThemedTabInactive}" />
+                <Button x:Name="TabSettingsBtn" Grid.Column="4" Text="⚙️&#10;Ayarlar" Style="{StaticResource ThemedTabInactive}" Clicked="TabSettings_Clicked" />
             </Grid>
         </Border>
     </Grid>

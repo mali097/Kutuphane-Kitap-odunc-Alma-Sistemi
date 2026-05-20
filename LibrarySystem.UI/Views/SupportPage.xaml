@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.SupportPage"
+             Title="Yardım ve Destek"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F5F0EB">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="SupportTopGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FF7A50" Offset="0.0" />
+            <GradientStop Color="#C44B7A" Offset="0.45" />
+            <GradientStop Color="#4A154B" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <Style x:Key="CreamCard" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="#FFFDFB" />
+            <Setter Property="Stroke" Value="#EDE8E2" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="0">
+            <Grid Background="{StaticResource SupportTopGradient}"
+                  Padding="14,48,14,14"
+                  ColumnDefinitions="Auto,*,Auto">
+                <Button Text="←"
+                        FontSize="20"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="4"
+                        Clicked="Back_Clicked" />
+                <Label Grid.Column="1"
+                       Text="Yardım ve Destek"
+                       TextColor="White"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="2"
+                        Text="⚙"
+                        FontSize="18"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        Padding="8,4"
+                        Clicked="Settings_Clicked" />
+            </Grid>
+
+            <Label Text="Sıkça Sorulanlar"
+                   BackgroundColor="#FFFDFB"
+                   TextColor="#1B1530"
+                   FontSize="14"
+                   FontAttributes="Bold"
+                   Padding="16,12"
+                   HorizontalTextAlignment="Center" />
+            <BoxView HeightRequest="1" Color="#EDE8E2" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1" Padding="16,14,16,8">
+            <VerticalStackLayout Spacing="14">
+
+                <Border x:Name="CategoryBackBar"
+                        IsVisible="False"
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        Padding="0,0,0,4">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="‹"
+                               FontSize="22"
+                               TextColor="#4A154B"
+                               VerticalOptions="Center" />
+                        <Label x:Name="CategoryBackTitle"
+                               Text=""
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               TextColor="#1B1530"
+                               VerticalOptions="Center" />
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CategoryBack_Tapped" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <Border x:Name="SearchBarWrap"
+                        Style="{StaticResource CreamCard}"
+                        Padding="12,10">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Label Text="🔍"
+                               FontSize="16"
+                               TextColor="#9A96A8"
+                               VerticalOptions="Center" />
+                        <Entry x:Name="SearchEntry"
+                               Placeholder="Nasıl yardımcı olabiliriz?"
+                               PlaceholderColor="#9A96A8"
+                               TextColor="#1B1530"
+                               BackgroundColor="Transparent"
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               TextChanged="Search_TextChanged" />
+                    </Grid>
+                </Border>
+
+                <VerticalStackLayout x:Name="CategoryListContainer" Spacing="10" />
+                <VerticalStackLayout x:Name="FaqAccordionContainer"
+                                     Spacing="10"
+                                     IsVisible="False" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="2"
+                Style="{StaticResource ThemedTabBar}"
+                StrokeShape="RoundRectangle 24"
+                Padding="14,10"
+                Margin="14,8,14,14">
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                <Button x:Name="TabHomeBtn" Grid.Column="0" Text="🏠&#10;Ana Sayfa"
+                        Style="{StaticResource ThemedTabInactive}" Clicked="TabHome_Clicked" />
+                <Button x:Name="TabCategoriesBtn" Grid.Column="1" Text="🗂️&#10;Kategoriler"
+                        Style="{StaticResource ThemedTabInactive}" Clicked="TabCategories_Clicked" />
+                <Button x:Name="TabFavoritesBtn" Grid.Column="2" Text="🔖&#10;Favorilerim"
+                        Style="{StaticResource ThemedTabInactive}" Clicked="TabFavorites_Clicked" />
+                <Button x:Name="TabNotificationsBtn" Grid.Column="3" Text="🔔&#10;Bildirimler"
+                        Style="{StaticResource ThemedTabInactive}" Clicked="TabNotifications_Clicked" />
+                <Button x:Name="TabSettingsBtn" Grid.Column="4" Text="⚙️&#10;Ayarlar"
+                        Style="{StaticResource ThemedTabInactive}" Clicked="TabSettings_Clicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>
