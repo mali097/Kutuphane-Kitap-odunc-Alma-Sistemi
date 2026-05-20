@@ -1,4 +1,4 @@
-﻿using LibrarySystem.Api.Entities;
+using LibrarySystem.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -16,6 +16,7 @@ public class LibraryDbContext : DbContext
     public DbSet<BookRating> BookRatings { get; set; }
     public DbSet<WeeklyRecommendation> WeeklyRecommendations { get; set; }
     public DbSet<BookFavorite> BookFavorites { get; set; }
+    public DbSet<UserNotification> UserNotifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,19 @@ public class LibraryDbContext : DbContext
         {
             entity.HasIndex(item => new { item.UserId, item.BookId }).IsUnique();
             entity.Property(item => item.Score).HasPrecision(3, 1);
+        });
+
+        modelBuilder.Entity<UserNotification>(entity =>
+        {
+            entity.HasIndex(item => new { item.UserId, item.OccurredAt });
+            entity.HasOne(item => item.User)
+                .WithMany()
+                .HasForeignKey(item => item.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(item => item.BorrowRecord)
+                .WithMany()
+                .HasForeignKey(item => item.BorrowRecordId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         var genresComparer = new ValueComparer<List<GenreType>>(

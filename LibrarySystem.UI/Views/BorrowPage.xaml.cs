@@ -6,9 +6,11 @@ namespace LibrarySystem.UI.Views;
 
 public partial class BorrowPage : ContentPage
 {
+    private const int LoanPeriodDays = 15;
     private readonly IBorrowService _borrowService;
     private readonly IBookService _bookService;
     private readonly List<Book> _books;
+    private DateTime _dueDate;
 
     public BorrowPage(List<Book>? availableBooks = null)
     {
@@ -23,16 +25,25 @@ public partial class BorrowPage : ContentPage
         base.OnAppearing();
 
         ErrorLabel.IsVisible = false;
+        _dueDate = DateTime.Today.AddDays(LoanPeriodDays);
+        DueDateLabel.Text = $"{_dueDate:dd.MM.yyyy} ({LoanPeriodDays} gün)";
 
         if (_books.Count == 0)
             _books.AddRange(await _bookService.GetAllBooksAsync());
 
         BookPicker.ItemsSource = _books.Where(b => b.IsAvailable).ToList();
         BookPicker.ItemDisplayBinding = new Binding(nameof(Book.Title));
-        DueDatePicker.Date = DateTime.Today.AddDays(14);
 
-        var overdue = await _borrowService.GetOverdueBorrowsAsync();
-        OverdueList.ItemsSource = overdue;
+        if (SessionHelper.IsAdmin)
+        {
+            OverdueSection.IsVisible = true;
+            var overdue = await _borrowService.GetOverdueBorrowsAsync();
+            OverdueList.ItemsSource = overdue;
+        }
+        else
+        {
+            OverdueSection.IsVisible = false;
+        }
     }
 
     private async void Borrow_Clicked(object sender, EventArgs e)
@@ -51,20 +62,18 @@ public partial class BorrowPage : ContentPage
             return;
         }
 
-        if (DueDatePicker.Date <= DateTime.Today)
-        {
-            ShowError("İade tarihi bugünden ileri olmalı.");
-            return;
-        }
-
-        bool ok = await _borrowService.BorrowBookAsync(selected.Id, SessionHelper.CurrentUser.Id, DueDatePicker.Date);
+        var userId = SessionHelper.CurrentUser.Id;
+        bool ok = await _borrowService.BorrowBookAsync(selected.Id, userId);
         if (!ok)
         {
             ShowError("Ödünç alma başarısız. API çalışıyor mu?");
             return;
         }
 
-        await DisplayAlert("✅", "Kitap ödünç alındı.", "Tamam");
+        await DisplayAlert(
+            "✅",
+            $"Kitap ödünç alındı.\n{DateTime.Today:dd.MM.yyyy} tarihinde \"{selected.Title}\" kitabını teslim aldınız. {_dueDate:dd.MM.yyyy} tarihine kadar ({LoanPeriodDays} gün içinde) kitabı teslim etmeniz gerekiyor.",
+            "Tamam");
         await Navigation.PopAsync();
     }
 

@@ -6,7 +6,7 @@ public interface IBookRatingService
     Task<BookRatingSummary> GetBookRatingSummaryAsync(int bookId, CancellationToken cancellationToken = default);
     Task<Dictionary<int, BookRatingSummary>> GetBookRatingSummariesAsync(IEnumerable<int> bookIds, CancellationToken cancellationToken = default);
     Task<List<UserRatedBookItem>> GetUserRatedBooksAsync(int userId, CancellationToken cancellationToken = default);
-    Task<List<TopRatedBookItem>> GetTopRatedBooksAsync(int limit, CancellationToken cancellationToken = default);
+    Task<List<TopRatedBookItem>> GetTopRatedBooksAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed record RateBookResult(bool IsSuccess, string? ErrorMessage, decimal? AverageRating, int RatingCount);
@@ -18,6 +18,9 @@ public sealed record UserRatedBookItem(
     string Title,
     string Author,
     IReadOnlyList<string> Genres,
+    int PublishYear,
+    string Publisher,
+    int PageCount,
     decimal MyRating,
     decimal? AverageRating,
     int RatingCount,
@@ -29,5 +32,7 @@ public sealed record TopRatedBookItem(
     string Author,
     IReadOnlyList<string> Genres,
     int PublishYear,
+    string Publisher,
+    int PageCount,
     decimal AverageRating,
     int RatingCount);

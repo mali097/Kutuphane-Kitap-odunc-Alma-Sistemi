@@ -7,14 +7,17 @@ namespace LibrarySystem.UI.Views;
 public partial class MainPage : ContentPage
 {
     private readonly IBookService _bookService;
+    private readonly IBorrowService _borrowService;
     private List<Book> _allBooks = new();
     private List<BookCategoryItem> _categories = new();
     private int? _selectedCategoryId;
+    private CancellationTokenSource? _searchDebounceCts;
 
     public MainPage()
     {
         InitializeComponent();
         _bookService = new BookService();
+        _borrowService = new BorrowService();
         _categories = BookCategories.CreateListWithCounts(Enumerable.Empty<Book>(), useDemoCountsWhenEmpty: true);
 
         QuotesCollection.ItemsSource = new List<QuoteCard>
@@ -42,6 +45,7 @@ public partial class MainPage : ContentPage
         ProfileUsernameLabel.Text = user?.Username ?? "Profil";
         ApplyCategoryFromNavigation();
         await LoadBooksAsync();
+        await LoadActiveBorrowsAsync();
         await LoadCategoriesAsync();
 
         if (MainTabNavigationState.OpenCategoriesTab)
@@ -88,6 +92,20 @@ public partial class MainPage : ContentPage
         CategoryUiHelper.FillTwoColumnGrid(CategoriesGrid, _categories, OpenCategoryAsync);
     }
 
+    private async Task LoadActiveBorrowsAsync()
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.IsAdmin)
+        {
+            ActiveBorrowsSection.IsVisible = false;
+            return;
+        }
+
+        var active = await _borrowService.GetMyActiveBorrowsAsync();
+        ActiveBorrowsCollectionView.ItemsSource = active;
+        ActiveBorrowCountLabel.Text = active.Count == 0 ? "" : $"{active.Count} kitap";
+        ActiveBorrowsSection.IsVisible = true;
+    }
+
     private async Task LoadBooksAsync()
     {
         _allBooks = await _bookService.GetAllBooksAsync();
@@ -108,23 +126,50 @@ public partial class MainPage : ContentPage
         IEnumerable<Book> q = _allBooks;
 
         if (_selectedCategoryId is int categoryId)
-            q = q.Where(b => BookCategories.MatchesBook(categoryId, b.Category));
-
-        var term = KitapSearchBar.Text?.Trim();
-        if (!string.IsNullOrWhiteSpace(term))
         {
-            q = q.Where(b =>
-                b.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                b.Author.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                b.ISBN.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                b.Category.Contains(term, StringComparison.OrdinalIgnoreCase));
+            q = q.Where(b => BookCategories.MatchesBook(categoryId, b.Category));
         }
 
         BooksCollectionView.ItemsSource = q.ToList();
     }
 
-    private void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
-        => ApplyBookFilter();
+    private async void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _searchDebounceCts?.Cancel();
+        _searchDebounceCts = new CancellationTokenSource();
+        var token = _searchDebounceCts.Token;
+
+        try
+        {
+            await Task.Delay(350, token);
+            await LoadBooksFromSearchAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            // yeni arama isteği geldi
+        }
+    }
+
+    private async Task LoadBooksFromSearchAsync()
+    {
+        var term = KitapSearchBar.Text?.Trim();
+
+        _allBooks = string.IsNullOrWhiteSpace(term)
+            ? await _bookService.GetAllBooksAsync()
+            : await _bookService.SearchBooksAsync(term);
+
+        if (SessionHelper.CurrentUser != null)
+        {
+            var favs = await _bookService.GetFavoritesAsync(SessionHelper.CurrentUser.Id);
+            var favIds = favs.Select(f => f.BookId).ToHashSet();
+            foreach (var book in _allBooks)
+            {
+                book.IsFavorite = favIds.Contains(book.Id);
+            }
+        }
+
+        ApplyBookFilter();
+    }
 
     private async void Book_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

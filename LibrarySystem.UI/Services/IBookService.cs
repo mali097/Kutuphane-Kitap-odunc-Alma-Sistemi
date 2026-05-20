@@ -8,6 +8,8 @@ public interface IBookService
     Task<bool> UpdateBookAsync(Book book);
 
     Task<List<Book>> GetAllBooksAsync();
+    Task<List<Book>> GetBooksByAuthorAsync(string author);
+    Task<List<Book>> SearchBooksAsync(string search);
     Task<List<FavoriteBook>> GetFavoritesAsync(int userId);
     Task<bool> AddFavoriteAsync(int userId, int bookId);
     Task<bool> RemoveFavoriteAsync(int userId, int bookId);

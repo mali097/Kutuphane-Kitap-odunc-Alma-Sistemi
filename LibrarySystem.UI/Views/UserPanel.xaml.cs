@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using LibrarySystem.UI.Helpers;
+using LibrarySystem.UI.Models;
 using LibrarySystem.UI.Services;
 
 namespace LibrarySystem.UI.Views;
@@ -19,6 +20,11 @@ public partial class UserPanelPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
         var user = SessionHelper.CurrentUser;
         if (user == null)
         {
@@ -38,8 +44,8 @@ public partial class UserPanelPage : ContentPage
         AdminRow.IsVisible = SessionHelper.IsAdmin;
         AdminSeparator.IsVisible = SessionHelper.IsAdmin;
 
-        var allBorrows = await _borrowService.GetUserBorrowsAsync(user.Id);
-        var active = allBorrows.Where(b => !b.IsReturned).ToList();
+        var allBorrows = await _borrowService.GetMyBorrowsAsync();
+        var active = await _borrowService.GetMyActiveBorrowsAsync();
         var history = allBorrows.Where(b => b.IsReturned)
             .OrderByDescending(b => b.ReturnDate)
             .ToList();
@@ -79,6 +85,31 @@ public partial class UserPanelPage : ContentPage
         => await DisplayAlert("Bildirim ayarları",
             "Şu an yalnızca kitap teslim ve iade bildirimleri gösteriliyor. İleride ek seçenekler buradan yönetilebilecek.",
             "Tamam");
+
+    private async void ReturnBorrow_Clicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: BorrowRecord record })
+            return;
+
+        var ok = await DisplayAlert(
+            "Kitap iadesi",
+            $"\"{record.BookTitle}\" kitabını iade etmek istiyor musunuz?",
+            "İade et",
+            "İptal");
+
+        if (!ok)
+            return;
+
+        var success = await _borrowService.ReturnBookAsync(record.Id);
+        if (!success)
+        {
+            await DisplayAlert("Hata", "İade işlemi başarısız. API çalışıyor mu?", "Tamam");
+            return;
+        }
+
+        await DisplayAlert("✅", "Kitap iade edildi. Bildirimler sayfasından detayı görebilirsiniz.", "Tamam");
+        await ReloadAsync();
+    }
 
     private async void Favorites_Tapped(object? sender, EventArgs e)
         => await Navigation.PushAsync(new FavoritesPage());
