@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
 
@@ -15,28 +15,87 @@ public class BorrowService : IBorrowService
 
     public async Task<List<BorrowRecord>> GetAllBorrowsAsync()
     {
-        try { return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows") ?? new(); }
+        if (!SessionHelper.IsAdmin)
+        {
+            return new();
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows") ?? new();
+        }
         catch { return new(); }
     }
 
     public async Task<List<BorrowRecord>> GetUserBorrowsAsync(int userId)
     {
-        try { return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>($"/api/borrows/user/{userId}") ?? new(); }
+        if (SessionHelper.CurrentUser is null || SessionHelper.CurrentUser.Id != userId)
+        {
+            return new();
+        }
+
+        return await GetMyBorrowsAsync();
+    }
+
+    public async Task<List<BorrowRecord>> GetMyBorrowsAsync()
+    {
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/users/me/borrows") ?? new();
+        }
+        catch { return new(); }
+    }
+
+    public async Task<List<BorrowRecord>> GetMyActiveBorrowsAsync()
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.IsAdmin)
+        {
+            return new();
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/users/me/borrows/active") ?? new();
+        }
         catch { return new(); }
     }
 
     public async Task<List<BorrowRecord>> GetOverdueBorrowsAsync()
     {
-        try { return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows/overdue") ?? new(); }
+        if (!SessionHelper.IsAdmin)
+        {
+            return new();
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows/overdue") ?? new();
+        }
         catch { return new(); }
     }
 
-    public async Task<bool> BorrowBookAsync(int bookId, int userId, DateTime dueDate)
+    public async Task<bool> BorrowBookAsync(int bookId, int userId)
     {
+        var currentUser = SessionHelper.CurrentUser;
+        if (currentUser is null)
+        {
+            return false;
+        }
+
+        if (!SessionHelper.IsAdmin && currentUser.Id != userId)
+        {
+            return false;
+        }
+
         try
         {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
             var response = await _httpClient.PostAsJsonAsync("/api/borrows",
-                new { BookId = bookId, UserId = userId, DueDate = dueDate });
+                new { BookId = bookId, UserId = currentUser.Id });
             return response.IsSuccessStatusCode;
         }
         catch { return false; }
@@ -46,7 +105,8 @@ public class BorrowService : IBorrowService
     {
         try
         {
-            var response = await _httpClient.PutAsJsonAsync($"/api/borrows/return/{borrowId}", new { });
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var response = await _httpClient.PutAsync($"/api/borrows/return/{borrowId}", null);
             return response.IsSuccessStatusCode;
         }
         catch { return false; }

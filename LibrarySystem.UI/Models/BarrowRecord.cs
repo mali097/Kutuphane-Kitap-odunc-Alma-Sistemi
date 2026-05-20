@@ -6,6 +6,8 @@ public class BorrowRecord
     public int BookId { get; set; }
     public string BookTitle { get; set; } = string.Empty;
     public string BookAuthor { get; set; } = string.Empty;
+    public string BookPublisher { get; set; } = string.Empty;
+    public int BookPageCount { get; set; }
     public int UserId { get; set; }
     public string UserFullName { get; set; } = string.Empty;
     public DateTime BorrowDate { get; set; }

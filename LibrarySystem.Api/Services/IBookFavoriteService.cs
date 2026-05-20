@@ -18,5 +18,7 @@ public sealed record FavoriteBookItem(
     string Isbn,
     IReadOnlyList<string> Genres,
     int PublishYear,
+    string Publisher,
+    int PageCount,
     bool IsAvailable,
     DateTime FavoritedAt);

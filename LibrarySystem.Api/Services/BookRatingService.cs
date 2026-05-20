@@ -128,6 +128,9 @@ public sealed class BookRatingService : IBookRatingService
                 book.Title,
                 book.Author,
                 GenreTypeListConverter.ToGenreNames(book.Genres),
+                book.PublishYear,
+                book.Publisher,
+                book.PageCount,
                 item.Score,
                 summary?.AverageRating,
                 summary?.RatingCount ?? 0,
@@ -135,10 +138,10 @@ public sealed class BookRatingService : IBookRatingService
         }).ToList();
     }
 
-    public async Task<List<TopRatedBookItem>> GetTopRatedBooksAsync(int limit, CancellationToken cancellationToken = default)
-    {
-        var normalizedLimit = Math.Clamp(limit, 1, 50);
+    public const int TopRatedBookCount = 5;
 
+    public async Task<List<TopRatedBookItem>> GetTopRatedBooksAsync(CancellationToken cancellationToken = default)
+    {
         var ratings = await _context.BookRatings
             .AsNoTracking()
             .Where(item => !item.IsDeleted)
@@ -151,7 +154,7 @@ public sealed class BookRatingService : IBookRatingService
             })
             .OrderByDescending(item => item.AverageRating)
             .ThenByDescending(item => item.RatingCount)
-            .Take(normalizedLimit)
+            .Take(TopRatedBookCount)
             .ToListAsync(cancellationToken);
 
         var bookIds = ratings.Select(item => item.BookId).ToList();
@@ -171,6 +174,8 @@ public sealed class BookRatingService : IBookRatingService
                     book.Author,
                     GenreTypeListConverter.ToGenreNames(book.Genres),
                     book.PublishYear,
+                    book.Publisher,
+                    book.PageCount,
                     decimal.Round(item.AverageRating, 2),
                     item.RatingCount);
             })
