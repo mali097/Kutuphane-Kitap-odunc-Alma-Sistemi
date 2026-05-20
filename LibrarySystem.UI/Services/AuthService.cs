@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
 
@@ -18,19 +18,40 @@ public class AuthService : IAuthService
         try
         {
             var response = await _httpClient.PostAsJsonAsync("/api/auth/login",
-                new { Username = username, Password = password });
-            if (response.IsSuccessStatusCode)
-                return await response.Content.ReadFromJsonAsync<User>();
+                new { Email = username, Password = password });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var login = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+            if (login is null)
+            {
+                return null;
+            }
+
+            return new User
+            {
+                Id = login.UserId,
+                UserId = login.UserId,
+                Username = login.Email,
+                FullName = $"{login.FirstName} {login.LastName}".Trim(),
+                Role = login.Role,
+                Token = login.Token
+            };
+        }
+        catch
+        {
             return null;
         }
-        catch { return null; }
     }
 
     public async Task<bool> RegisterAsync(User user)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", user);
+            var response = await _httpClient.PostAsJsonAsync("/api/users/register", user);
             return response.IsSuccessStatusCode;
         }
         catch { return false; }
@@ -40,6 +61,7 @@ public class AuthService : IAuthService
     {
         try
         {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
             var response = await _httpClient.PutAsJsonAsync($"/api/auth/change-password/{userId}",
                 new { OldPassword = oldPassword, NewPassword = newPassword });
             return response.IsSuccessStatusCode;
@@ -51,7 +73,8 @@ public class AuthService : IAuthService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<List<User>>("/api/users") ?? new();
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            return await _httpClient.GetFromJsonAsync<List<User>>("/api/admin/users") ?? new();
         }
         catch { return new(); }
     }
@@ -60,9 +83,20 @@ public class AuthService : IAuthService
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"/api/users/{userId}");
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var response = await _httpClient.DeleteAsync($"/api/admin/users/{userId}");
             return response.IsSuccessStatusCode;
         }
         catch { return false; }
+    }
+
+    private sealed class LoginResponseDto
+    {
+        public int UserId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
     }
 }

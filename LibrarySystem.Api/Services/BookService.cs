@@ -22,13 +22,20 @@ public sealed class BookService : IBookService
 
         if (query is not null)
         {
+            if (!string.IsNullOrWhiteSpace(query.Author))
+            {
+                var author = query.Author.Trim().ToLower();
+                bookQuery = bookQuery.Where(book => book.Author.ToLower().Contains(author));
+            }
+
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                var search = query.Search.Trim();
+                var search = query.Search.Trim().ToLower();
                 bookQuery = bookQuery.Where(book =>
-                    book.Title.Contains(search)
-                    || book.Author.Contains(search)
-                    || book.Isbn.Contains(search));
+                    book.Title.ToLower().Contains(search)
+                    || book.Author.ToLower().Contains(search)
+                    || book.Isbn.ToLower().Contains(search)
+                    || book.Publisher.ToLower().Contains(search));
             }
 
             if (query.PublishYear.HasValue)
@@ -42,10 +49,10 @@ public sealed class BookService : IBookService
             }
         }
 
-        var books = await bookQuery
-            .OrderBy(book => book.Title)
-            .ThenBy(book => book.Author)
-            .ToListAsync(cancellationToken);
+        var orderByAuthor = query is not null && !string.IsNullOrWhiteSpace(query.Author);
+        var books = orderByAuthor
+            ? await bookQuery.OrderBy(book => book.Author).ThenBy(book => book.Title).ToListAsync(cancellationToken)
+            : await bookQuery.OrderBy(book => book.Title).ThenBy(book => book.Author).ToListAsync(cancellationToken);
 
         if (query is not null
             && !string.IsNullOrWhiteSpace(query.Genre)
@@ -70,6 +77,7 @@ public sealed class BookService : IBookService
     {
         newBook.Title = newBook.Title.Trim();
         newBook.Author = newBook.Author.Trim();
+        newBook.Publisher = newBook.Publisher.Trim();
         newBook.Genres = newBook.Genres.Distinct().ToList();
         newBook.CreatedBy = actorUserId ?? 0;
         newBook.Isbn = string.Empty;
@@ -111,6 +119,16 @@ public sealed class BookService : IBookService
         if (request.PublishYear.HasValue)
         {
             book.PublishYear = request.PublishYear.Value;
+        }
+
+        if (HasMeaningfulValue(request.Publisher))
+        {
+            book.Publisher = request.Publisher!.Trim();
+        }
+
+        if (request.PageCount.HasValue)
+        {
+            book.PageCount = request.PageCount.Value;
         }
 
         if (request.IsAvailable.HasValue)

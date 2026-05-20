@@ -9,8 +9,22 @@
             <Label Text="Kitap Seçin *" FontAttributes="Bold" />
             <Picker x:Name="BookPicker" Title="Kitap seçin..." />
 
-            <Label Text="İade Tarihi *" FontAttributes="Bold" />
-            <DatePicker x:Name="DueDatePicker" Format="dd/MM/yyyy" />
+            <Label Text="Son teslim tarihi (15 gün)" FontAttributes="Bold" />
+            <Border BackgroundColor="#E8F5E9"
+                    Stroke="#A5D6A7"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="14,12">
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="DueDateLabel"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="#2E7D32" />
+                    <Label Text="Ödünç süresi sabittir: kitabı aldığınız günden itibaren 15 gün içinde iade etmelisiniz. Son 3 günde hatırlatma bildirimi gönderilir."
+                           FontSize="12"
+                           TextColor="#558B2F"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
 
             <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
 
@@ -18,8 +32,9 @@
                     CornerRadius="10" HeightRequest="50" FontAttributes="Bold"
                     Clicked="Borrow_Clicked" />
 
+            <VerticalStackLayout x:Name="OverdueSection" IsVisible="False" Spacing="8" Margin="0,20,0,0">
             <Label Text="⚠️ Geciken İadeler" FontAttributes="Bold"
-                   FontSize="16" TextColor="#C62828" Margin="0,20,0,0" />
+                   FontSize="16" TextColor="#C62828" />
 
             <CollectionView x:Name="OverdueList" EmptyView="Geciken iade yok 🎉">
                 <CollectionView.ItemTemplate>
@@ -44,6 +59,7 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

@@ -31,7 +31,7 @@
                     Padding="12,10"
                     MinimumHeightRequest="56">
                 <SearchBar x:Name="KitapSearchBar"
-                           Placeholder="Kitap, yazar veya ISBN ara"
+                           Placeholder="Kitap adı veya yazar ara"
                            TextColor="White"
                            PlaceholderColor="#E8E0FF"
                            BackgroundColor="Transparent"
@@ -201,12 +201,83 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <Border x:Name="ActiveBorrowsSection"
+                        BackgroundColor="#1E3A5F"
+                        Stroke="#7FC0FF55"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="14"
+                        IsVisible="False">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="📖 Ödünçteki kitaplarım"
+                                   TextColor="White"
+                                   FontAttributes="Bold"
+                                   FontSize="15"/>
+                            <Label x:Name="ActiveBorrowCountLabel"
+                                   Grid.Column="1"
+                                   Text="0"
+                                   TextColor="#B7D2FF"
+                                   FontSize="12"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <CollectionView x:Name="ActiveBorrowsCollectionView"
+                                        SelectionMode="None"
+                                        EmptyView="Şu an ödünçte kitabın yok."
+                                        ItemsLayout="VerticalList">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BackgroundColor="#00000033"
+                                            Stroke="#7FC0FF44"
+                                            StrokeShape="RoundRectangle 14"
+                                            Padding="12"
+                                            Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                                            <Label Text="{Binding BookTitle}"
+                                                   TextColor="White"
+                                                   FontAttributes="Bold"
+                                                   FontSize="13"/>
+                                            <Label Grid.Row="1"
+                                                   Text="{Binding BookAuthor}"
+                                                   TextColor="#B0B8D9"
+                                                   FontSize="11"/>
+                                            <HorizontalStackLayout Grid.Row="2" Spacing="10">
+                                                <Label Text="{Binding BorrowDate, StringFormat='Alınış: {0:dd.MM.yyyy}'}"
+                                                       TextColor="#9FA8DA"
+                                                       FontSize="10"/>
+                                                <Label Text="{Binding DueDate, StringFormat='Son gün: {0:dd.MM.yyyy}'}"
+                                                       TextColor="#FFD180"
+                                                       FontSize="10"
+                                                       FontAttributes="Bold"/>
+                                            </HorizontalStackLayout>
+                                            <Label Grid.Column="1"
+                                                   Grid.RowSpan="3"
+                                                   Text="{Binding Status}"
+                                                   FontSize="10"
+                                                   FontAttributes="Bold"
+                                                   TextColor="#E8EAF6"
+                                                   VerticalOptions="Center"
+                                                   HorizontalTextAlignment="End"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                        <Button Text="Profilde tümünü gör →"
+                                BackgroundColor="Transparent"
+                                TextColor="#B7D2FF"
+                                FontSize="12"
+                                Clicked="Profile_Clicked"/>
+                    </VerticalStackLayout>
+                </Border>
+
                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource InversePanelBgColorLight}, Dark={StaticResource InversePanelBgColorDark}}"
                         Stroke="{AppThemeBinding Light={StaticResource InversePanelStrokeColorLight}, Dark={StaticResource InversePanelStrokeColorDark}}"
                         StrokeShape="RoundRectangle 18"
                         Padding="14">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="📚 Mevcut Kitaplarım"
+                        <Label Text="📚 Kütüphanedeki kitaplar"
                                TextColor="White"
                                FontAttributes="Bold"
                                FontSize="13"/>
@@ -214,8 +285,8 @@
                         <Grid ColumnDefinitions="2*,2*,1.5*,Auto" Padding="4,0" ColumnSpacing="10">
                             <Label Text="KİTAP ADI" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
                             <Label Grid.Column="1" Text="YAZAR" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
-                            <Label Grid.Column="2" Text="TESLİM TARİHİ" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
-                            <Label Grid.Column="3" Text="DURUM" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                            <Label Grid.Column="2" Text="DURUM" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
+                            <Label Grid.Column="3" Text="" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
                         </Grid>
 
                         <CollectionView x:Name="BooksCollectionView"
@@ -240,7 +311,7 @@
                                                    TextColor="#FFFFFFCC"
                                                    FontSize="12"/>
                                             <Label Grid.Column="2"
-                                                   Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                                   Text="{Binding IsAvailable, Converter={StaticResource StatusText}}"
                                                    TextColor="#B7D2FF"
                                                    FontSize="12"/>
                                             <Border Grid.Column="3"

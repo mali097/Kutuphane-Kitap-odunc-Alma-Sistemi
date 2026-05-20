@@ -238,19 +238,28 @@
                                                TextColor="#FFD180"
                                                FontSize="11" />
                                     </HorizontalStackLayout>
-                                    <Border Grid.Column="1"
-                                            Grid.RowSpan="3"
-                                            StrokeShape="RoundRectangle 12"
-                                            BackgroundColor="#00000044"
-                                            Padding="10,6"
-                                            VerticalOptions="Center">
-                                        <Label Text="{Binding Status}"
-                                               FontSize="11"
-                                               FontAttributes="Bold"
-                                               TextColor="#E8EAF6"
-                                               MaxLines="2"
-                                               LineBreakMode="WordWrap" />
-                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1"
+                                                         Grid.RowSpan="3"
+                                                         Spacing="6"
+                                                         VerticalOptions="Center">
+                                        <Border StrokeShape="RoundRectangle 12"
+                                                BackgroundColor="#00000044"
+                                                Padding="10,6">
+                                            <Label Text="{Binding Status}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="#E8EAF6"
+                                                   MaxLines="2"
+                                                   LineBreakMode="WordWrap" />
+                                        </Border>
+                                        <Button Text="İade et"
+                                                FontSize="11"
+                                                TextColor="White"
+                                                BackgroundColor="#2E7D32"
+                                                CornerRadius="10"
+                                                Padding="10,4"
+                                                Clicked="ReturnBorrow_Clicked" />
+                                    </VerticalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate>

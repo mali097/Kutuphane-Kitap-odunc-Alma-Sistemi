@@ -104,6 +104,8 @@ public sealed class BookFavoriteService : IBookFavoriteService
                     book.Isbn,
                     GenreTypeListConverter.ToGenreNames(book.Genres),
                     book.PublishYear,
+                    book.Publisher,
+                    book.PageCount,
                     book.IsAvailable,
                     item.CreatedDate);
             })

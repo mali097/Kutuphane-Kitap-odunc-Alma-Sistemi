@@ -18,6 +18,8 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBorrowService, BorrowService>();
+builder.Services.AddScoped<IBorrowNotificationService, BorrowNotificationService>();
+builder.Services.AddHostedService<BorrowReminderBackgroundService>();
 builder.Services.AddScoped<IWeeklyRecommendationService, WeeklyRecommendationService>();
 builder.Services.AddScoped<IBookRatingService, BookRatingService>();
 builder.Services.AddScoped<IBookFavoriteService, BookFavoriteService>();
@@ -41,6 +43,7 @@ using (var scope = app.Services.CreateScope())
         var databaseName = db.Database.GetDbConnection().Database;
         logger.LogInformation("Applying EF migrations to database '{DatabaseName}'", databaseName);
         db.Database.Migrate();
+        await EnsureBookRatingsTableAsync(db);
         logger.LogInformation("Database migrations applied successfully.");
     }
     catch (Exception exception)
@@ -68,42 +71,66 @@ app.MapGet("/api/books", async (
     return Results.Ok(books.Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries))));
 });
 
-app.MapGet("/api/genres", () =>
-    Results.Ok(GenreCatalog.AllNames.Select(name => new GenreOptionResponse(
-        name,
-        GenreCatalog.GetDisplayName(Enum.Parse<GenreType>(name, ignoreCase: true))))));
+app.MapGet("/api/genres", async (
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(cancellationToken: cancellationToken);
+    var categories = GenreCatalog.AllNames
+        .Select(name =>
+        {
+            Enum.TryParse<GenreType>(name, ignoreCase: true, out var genreType);
+            var bookCount = books.Count(book => book.Genres.Contains(genreType));
+            return new GenreOptionResponse(
+                name,
+                GenreCatalog.GetDisplayName(genreType),
+                bookCount);
+        })
+        .ToList();
 
-app.MapGet("/api/books/by-category", async (
+    return Results.Ok(categories);
+});
+
+app.MapGet("/api/genres/{category}/books", async (
+    string category,
     IBookService bookService,
     IBookRatingService bookRatingService,
     CancellationToken cancellationToken) =>
 {
-    var books = await bookService.GetAllBooksAsync(null, cancellationToken);
-    var summaries = await bookRatingService.GetBookRatingSummariesAsync(books.Select(item => item.Id), cancellationToken);
+    if (!GenreCatalog.TryParse(category, out var genreType))
+    {
+        return Results.NotFound(new { Message = "Category not found.", Category = category });
+    }
 
-    var grouped = GenreCatalog.AllNames
-        .Select(category =>
+    var books = await bookService.GetAllBooksAsync(
+        new GetBooksQuery { Genre = GenreCatalog.ToStorageName(genreType) },
+        cancellationToken);
+
+    var summaries = await bookRatingService.GetBookRatingSummariesAsync(
+        books.Select(item => item.Id),
+        cancellationToken);
+
+    return Results.Ok(books.Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries))));
+});
+
+app.MapGet("/api/books/by-category", async (
+    IBookService bookService,
+    CancellationToken cancellationToken) =>
+{
+    var books = await bookService.GetAllBooksAsync(cancellationToken: cancellationToken);
+    var categories = GenreCatalog.AllNames
+        .Select(name =>
         {
-            if (!Enum.TryParse<GenreType>(category, ignoreCase: true, out var genreType))
-            {
-                return new BooksByCategoryResponse(category, category, []);
-            }
-
-            var categoryBooks = books
-                .Where(book => book.Genres.Contains(genreType))
-                .OrderBy(book => book.Title)
-                .ThenBy(book => book.Author)
-                .Select(book => MapBookToResponse(book, GetBookRatingSummary(book.Id, summaries)))
-                .ToList();
-
-            return new BooksByCategoryResponse(
-                category,
+            Enum.TryParse<GenreType>(name, ignoreCase: true, out var genreType);
+            var bookCount = books.Count(book => book.Genres.Contains(genreType));
+            return new CategorySummaryResponse(
+                name,
                 GenreCatalog.GetDisplayName(genreType),
-                categoryBooks);
+                bookCount);
         })
         .ToList();
 
-    return Results.Ok(grouped);
+    return Results.Ok(categories);
 });
 
 app.MapGet("/api/books/{id:int}", async (
@@ -121,11 +148,10 @@ app.MapGet("/api/books/{id:int}", async (
 });
 
 app.MapGet("/api/books/top-rated", async (
-    int? limit,
     IBookRatingService bookRatingService,
     CancellationToken cancellationToken) =>
 {
-    var topBooks = await bookRatingService.GetTopRatedBooksAsync(limit ?? 50, cancellationToken);
+    var topBooks = await bookRatingService.GetTopRatedBooksAsync(cancellationToken);
     return Results.Ok(topBooks.Select(MapTopRatedBookToResponse));
 });
 
@@ -598,6 +624,8 @@ app.MapPost("/api/admin/books", async (
         Author = request.Author,
         Genres = parsedGenres,
         PublishYear = request.PublishYear,
+        Publisher = request.Publisher.Trim(),
+        PageCount = request.PageCount,
         IsAvailable = request.IsAvailable
     };
 
@@ -693,24 +721,296 @@ app.MapGet("/api/admin/borrow-records/active", async (
 
 app.MapPost("/api/borrow-records/borrow", async (
     BorrowBookRequest request,
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
     HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
     IBorrowService borrowService,
     CancellationToken cancellationToken) =>
 {
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
     var validationErrors = ValidateBorrowBookRequest(request);
     if (validationErrors.Count != 0)
     {
         return Results.ValidationProblem(validationErrors);
     }
 
-    var actorUserId = GetActorUserId(httpContext);
-    var recordId = await borrowService.BorrowBookAsync(request, actorUserId, cancellationToken);
+    if (!authorization.IsAdmin && request.UserId != authorization.UserId!.Value)
+    {
+        return Results.Forbid();
+    }
+
+    var actorUserId = authorization.UserId!.Value;
+    var borrowRequest = new BorrowBookRequest
+    {
+        UserId = authorization.IsAdmin ? request.UserId : authorization.UserId!.Value,
+        BookId = request.BookId
+    };
+
+    var recordId = await borrowService.BorrowBookAsync(borrowRequest, actorUserId, cancellationToken);
     return recordId.HasValue
         ? Results.Created($"/api/borrow-records/{recordId.Value}", new { Message = "Book borrowed.", BorrowRecordId = recordId.Value })
         : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
 });
 
+app.MapGet("/api/borrows", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetAllBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapBorrowRecordListResponse));
+});
+
+app.MapGet("/api/borrows/overdue", async (
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAdminAsync(adminToken, httpContext, authService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetOverdueBorrowRecordsWithDetailsAsync(cancellationToken);
+    return Results.Ok(records.Select(MapBorrowRecordListResponse));
+});
+
+app.MapGet("/api/users/me/borrows", async (
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var records = await borrowService.GetUserBorrowRecordsWithDetailsAsync(authorization.UserId!.Value, cancellationToken);
+    return Results.Ok(records.Select(MapBorrowRecordListResponse));
+});
+
+app.MapGet("/api/users/me/borrows/active", async (
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    if (authorization.IsAdmin)
+    {
+        return Results.Forbid();
+    }
+
+    var records = await borrowService.GetActiveUserBorrowRecordsWithDetailsAsync(
+        authorization.UserId!.Value,
+        cancellationToken);
+    return Results.Ok(records.Select(MapBorrowRecordListResponse));
+});
+
+app.MapPost("/api/borrows", async (
+    CreateBorrowApiRequest request,
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var validationErrors = ValidateCreateBorrowApiRequest(request);
+    if (validationErrors.Count != 0)
+    {
+        return Results.ValidationProblem(validationErrors);
+    }
+
+    if (!authorization.IsAdmin && request.UserId != authorization.UserId!.Value)
+    {
+        return Results.Forbid();
+    }
+
+    var actorUserId = authorization.UserId!.Value;
+    var borrowRequest = new BorrowBookRequest
+    {
+        UserId = authorization.IsAdmin ? request.UserId : authorization.UserId!.Value,
+        BookId = request.BookId
+    };
+
+    var recordId = await borrowService.BorrowBookAsync(borrowRequest, actorUserId, cancellationToken);
+    return recordId.HasValue
+        ? Results.Created($"/api/borrows/{recordId.Value}", new { Message = "Book borrowed.", BorrowRecordId = recordId.Value })
+        : Results.BadRequest(new { Message = "Borrow action failed. User/book may be invalid or book unavailable." });
+});
+
+app.MapPut("/api/borrows/return/{borrowRecordId:int}", async (
+    int borrowRecordId,
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowService borrowService,
+    CancellationToken cancellationToken) =>
+{
+    if (borrowRecordId <= 0)
+    {
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["borrowRecordId"] = ["Borrow record id must be greater than zero."]
+        });
+    }
+
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var actorUserId = authorization.UserId!.Value;
+    var isReturned = await borrowService.ReturnBookAsync(
+        new ReturnBookRequest { BorrowRecordId = borrowRecordId },
+        actorUserId,
+        allowAnyUser: authorization.IsAdmin,
+        cancellationToken);
+
+    return isReturned
+        ? Results.Ok(new { Message = "Book returned.", BorrowRecordId = borrowRecordId })
+        : Results.BadRequest(new { Message = "Return action failed. Record may be invalid or already returned." });
+});
+
+app.MapGet("/api/users/me/notifications", async (
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowNotificationService notificationService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    if (authorization.IsAdmin)
+    {
+        return Results.Forbid();
+    }
+
+    await notificationService.ProcessDueDateRemindersAsync(cancellationToken);
+    var notifications = await notificationService.GetUserNotificationsAsync(authorization.UserId!.Value, cancellationToken);
+    return Results.Ok(notifications.Select(MapUserNotificationToResponse));
+});
+
+app.MapPatch("/api/notifications/{notificationId:int}/read", async (
+    int notificationId,
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    [FromHeader(Name = AdminTokenHeader)] string? adminToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    IBorrowNotificationService notificationService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeAuthenticatedUserAsync(
+        userToken, authorToken, adminToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    if (authorization.IsAdmin)
+    {
+        return Results.Forbid();
+    }
+
+    var isUpdated = await notificationService.MarkAsReadAsync(
+        notificationId,
+        authorization.UserId!.Value,
+        cancellationToken);
+
+    return isUpdated
+        ? Results.Ok(new { Message = "Notification marked as read.", NotificationId = notificationId })
+        : Results.NotFound(new { Message = "Notification not found." });
+});
+
 app.Run();
+
+static async Task EnsureBookRatingsTableAsync(LibraryDbContext db)
+{
+    await db.Database.ExecuteSqlRawAsync(
+        """
+        IF OBJECT_ID(N'[BookRatings]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [BookRatings] (
+                [Id] int NOT NULL IDENTITY,
+                [UserId] int NOT NULL,
+                [BookId] int NOT NULL,
+                [Score] decimal(3,1) NOT NULL,
+                [CreatedDate] datetime2 NOT NULL,
+                [CreatedBy] int NOT NULL,
+                [UpdatedDate] datetime2 NULL,
+                [UpdatedBy] int NULL,
+                [IsDeleted] bit NOT NULL,
+                CONSTRAINT [PK_BookRatings] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_BookRatings_Books_BookId] FOREIGN KEY ([BookId]) REFERENCES [Books] ([Id]) ON DELETE CASCADE,
+                CONSTRAINT [FK_BookRatings_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+            );
+            CREATE INDEX [IX_BookRatings_BookId] ON [BookRatings] ([BookId]);
+            CREATE UNIQUE INDEX [IX_BookRatings_UserId_BookId] ON [BookRatings] ([UserId], [BookId]);
+        END
+        """);
+}
 
 static int GetActorUserId(HttpContext context)
 {
@@ -776,6 +1076,37 @@ static async Task<AdminAuthorizationResult> AuthorizeAuthorAsync(
     }
 
     return new AdminAuthorizationResult(true, userId.Value, null);
+}
+
+static async Task<AuthenticatedUserResult> AuthorizeAuthenticatedUserAsync(
+    string? userTokenHeaderValue,
+    string? authorTokenHeaderValue,
+    string? adminTokenHeaderValue,
+    HttpContext context,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken)
+{
+    var adminAuthorization = await AuthorizeAdminAsync(adminTokenHeaderValue, context, authService, cancellationToken);
+    if (adminAuthorization.IsAuthorized)
+    {
+        return new AuthenticatedUserResult(true, adminAuthorization.AdminUserId, true, null);
+    }
+
+    var userAuthorization = await AuthorizeStudentOrAuthorAsync(
+        userTokenHeaderValue,
+        authorTokenHeaderValue,
+        context,
+        authService,
+        userService,
+        cancellationToken);
+
+    if (!userAuthorization.IsAuthorized)
+    {
+        return new AuthenticatedUserResult(false, null, false, userAuthorization.ErrorResult);
+    }
+
+    return new AuthenticatedUserResult(true, userAuthorization.AdminUserId, false, null);
 }
 
 static async Task<AdminAuthorizationResult> AuthorizeStudentOrAuthorAsync(
@@ -892,6 +1223,16 @@ static Dictionary<string, string[]> ValidateCreateBookRequest(CreateBookRequest 
         errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
     }
 
+    if (request.Publisher.Trim().Length > 200)
+    {
+        errors["publisher"] = ["Publisher cannot be longer than 200 characters."];
+    }
+
+    if (request.PageCount < 0)
+    {
+        errors["pageCount"] = ["PageCount cannot be negative."];
+    }
+
     return errors;
 }
 
@@ -920,6 +1261,16 @@ static Dictionary<string, string[]> ValidateUpdateBookRequest(UpdateBookRequest 
     if (request.PublishYear.HasValue && (request.PublishYear.Value < 0 || request.PublishYear.Value > DateTime.UtcNow.Year + 1))
     {
         errors["publishYear"] = [$"PublishYear must be between 0 and {DateTime.UtcNow.Year + 1}."];
+    }
+
+    if (request.Publisher is not null && request.Publisher.Trim().Length > 200)
+    {
+        errors["publisher"] = ["Publisher cannot be longer than 200 characters."];
+    }
+
+    if (request.PageCount.HasValue && request.PageCount.Value < 0)
+    {
+        errors["pageCount"] = ["PageCount cannot be negative."];
     }
 
     if (request.Genres is not null)
@@ -1172,6 +1523,8 @@ static BookResponse MapBookToResponse(Book book, BookRatingSummary ratingSummary
         book.Isbn,
         GenreTypeListConverter.ToGenreNames(book.Genres),
         book.PublishYear,
+        book.Publisher,
+        book.PageCount,
         book.IsAvailable,
         ratingSummary.AverageRating,
         ratingSummary.RatingCount
@@ -1189,6 +1542,69 @@ static UserResponse MapUserToResponse(User user)
     );
 }
 
+static BorrowRecordListResponse MapBorrowRecordListResponse(BorrowRecord record)
+{
+    var userFullName = record.User is null
+        ? string.Empty
+        : $"{record.User.FirstName} {record.User.LastName}".Trim();
+
+    return new BorrowRecordListResponse
+    {
+        Id = record.Id,
+        BookId = record.BookId,
+        BookTitle = record.Book?.Title ?? string.Empty,
+        BookAuthor = record.Book?.Author ?? string.Empty,
+        BookPublisher = record.Book?.Publisher ?? string.Empty,
+        BookPageCount = record.Book?.PageCount ?? 0,
+        UserId = record.UserId,
+        UserFullName = userFullName,
+        BorrowDate = record.BorrowDate,
+        DueDate = record.ExpectedReturnDate,
+        ReturnDate = record.ActualReturnDate,
+        IsReturned = record.IsReturned
+    };
+}
+
+static UserNotificationResponse MapUserNotificationToResponse(UserNotification notification)
+{
+    return new UserNotificationResponse
+    {
+        Id = notification.Id,
+        Title = GetNotificationTitle(notification.NotificationType),
+        Message = notification.Message,
+        OccurredAt = notification.OccurredAt,
+        NotificationType = notification.NotificationType.ToString(),
+        IsRead = notification.IsRead
+    };
+}
+
+static string GetNotificationTitle(BorrowNotificationType notificationType) =>
+    notificationType switch
+    {
+        BorrowNotificationType.BookReceived => "Kitap teslim alındı",
+        BorrowNotificationType.ReturnedOnTime => "Zamanında iade",
+        BorrowNotificationType.ReturnedLate => "Gecikmiş iade",
+        BorrowNotificationType.DueDateReminder => "Teslim hatırlatması",
+        _ => "Bildirim"
+    };
+
+static Dictionary<string, string[]> ValidateCreateBorrowApiRequest(CreateBorrowApiRequest request)
+{
+    var errors = new Dictionary<string, string[]>();
+
+    if (request.UserId <= 0)
+    {
+        errors["userId"] = ["User id must be greater than zero."];
+    }
+
+    if (request.BookId <= 0)
+    {
+        errors["bookId"] = ["Book id must be greater than zero."];
+    }
+
+    return errors;
+}
+
 static AdminBorrowRecordResponse MapAdminBorrowRecordToResponse(BorrowRecord record)
 {
     return new AdminBorrowRecordResponse(
@@ -1199,6 +1615,9 @@ static AdminBorrowRecordResponse MapAdminBorrowRecordToResponse(BorrowRecord rec
         record.User?.Email ?? string.Empty,
         record.BookId,
         record.Book?.Title ?? string.Empty,
+        record.Book?.Author ?? string.Empty,
+        record.Book?.Publisher ?? string.Empty,
+        record.Book?.PageCount ?? 0,
         record.BorrowDate,
         record.ExpectedReturnDate,
         record.ActualReturnDate,
@@ -1213,6 +1632,9 @@ static UserRatedBookResponse MapUserRatedBookToResponse(UserRatedBookItem item)
         item.Title,
         item.Author,
         item.Genres,
+        item.PublishYear,
+        item.Publisher,
+        item.PageCount,
         item.MyRating,
         item.AverageRating,
         item.RatingCount,
@@ -1227,6 +1649,8 @@ static TopRatedBookResponse MapTopRatedBookToResponse(TopRatedBookItem item)
         item.Author,
         item.Genres,
         item.PublishYear,
+        item.Publisher,
+        item.PageCount,
         item.AverageRating,
         item.RatingCount);
 }
@@ -1240,6 +1664,8 @@ static FavoriteBookResponse MapFavoriteBookToResponse(FavoriteBookItem item)
         item.Isbn,
         item.Genres,
         item.PublishYear,
+        item.Publisher,
+        item.PageCount,
         item.IsAvailable,
         item.FavoritedAt);
 }
@@ -1251,17 +1677,16 @@ internal sealed record BookResponse(
     string Isbn,
     IReadOnlyList<string> Genres,
     int PublishYear,
+    string Publisher,
+    int PageCount,
     bool IsAvailable,
     decimal? AverageRating,
     int RatingCount
 );
 
-internal sealed record GenreOptionResponse(string Id, string DisplayName);
+internal sealed record GenreOptionResponse(string Id, string DisplayName, int BookCount);
 
-internal sealed record BooksByCategoryResponse(
-    string Category,
-    string DisplayName,
-    IReadOnlyList<BookResponse> Books);
+internal sealed record CategorySummaryResponse(string Category, string DisplayName, int BookCount);
 
 internal sealed record UserResponse(
     int Id,
@@ -1279,6 +1704,9 @@ internal sealed record AdminBorrowRecordResponse(
     string UserEmail,
     int BookId,
     string BookTitle,
+    string BookAuthor,
+    string BookPublisher,
+    int BookPageCount,
     DateTime BorrowDate,
     DateTime ExpectedReturnDate,
     DateTime? ActualReturnDate,
@@ -1290,6 +1718,9 @@ internal sealed record UserRatedBookResponse(
     string Title,
     string Author,
     IReadOnlyList<string> Genres,
+    int PublishYear,
+    string Publisher,
+    int PageCount,
     decimal MyRating,
     decimal? AverageRating,
     int RatingCount,
@@ -1302,6 +1733,8 @@ internal sealed record TopRatedBookResponse(
     string Author,
     IReadOnlyList<string> Genres,
     int PublishYear,
+    string Publisher,
+    int PageCount,
     decimal AverageRating,
     int RatingCount
 );
@@ -1313,8 +1746,12 @@ internal sealed record FavoriteBookResponse(
     string Isbn,
     IReadOnlyList<string> Genres,
     int PublishYear,
+    string Publisher,
+    int PageCount,
     bool IsAvailable,
     DateTime FavoritedAt
 );
 
 internal sealed record AdminAuthorizationResult(bool IsAuthorized, int? AdminUserId, IResult? ErrorResult);
+
+internal sealed record AuthenticatedUserResult(bool IsAuthorized, int? UserId, bool IsAdmin, IResult? ErrorResult);

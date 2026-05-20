@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
@@ -15,16 +15,46 @@ public class BookService : IBookService
     }
 
     public async Task<List<Book>> GetAllBooksAsync()
+        => await FetchBooksAsync("/api/books");
+
+    public async Task<List<Book>> GetBooksByAuthorAsync(string author)
+    {
+        if (string.IsNullOrWhiteSpace(author))
+        {
+            return await GetAllBooksAsync();
+        }
+
+        return await FetchBooksAsync($"/api/books?author={Uri.EscapeDataString(author.Trim())}");
+    }
+
+    public async Task<List<Book>> SearchBooksAsync(string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return await GetAllBooksAsync();
+        }
+
+        return await FetchBooksAsync($"/api/books?search={Uri.EscapeDataString(search.Trim())}");
+    }
+
+    private async Task<List<Book>> FetchBooksAsync(string url)
     {
         try
         {
-            var apiBooks = await _httpClient.GetFromJsonAsync<List<ApiBookDto>>("/api/books");
+            var apiBooks = await _httpClient.GetFromJsonAsync<List<ApiBookDto>>(url);
             if (apiBooks is { Count: > 0 })
+            {
                 return apiBooks.Select(MapFromApi).ToList();
+            }
+
+            if (apiBooks is not null)
+            {
+                return new();
+            }
         }
         catch
         {
-            // API henüz yoksa veya erişilemiyorsa yerel liste kullanılır
+            // API erişilemiyorsa yerel liste kullanılır
         }
 
         return GetLocalFallbackBooks();
@@ -52,7 +82,9 @@ public class BookService : IBookService
         Title = dto.Title ?? "",
         Author = dto.Author ?? "",
         ISBN = dto.Isbn ?? "",
-        Category = string.IsNullOrWhiteSpace(dto.Genre) ? dto.Category ?? "" : dto.Genre,
+        Category = dto.Genres is { Count: > 0 }
+            ? string.Join(", ", dto.Genres)
+            : string.IsNullOrWhiteSpace(dto.Genre) ? dto.Category ?? "" : dto.Genre,
         PublishYear = dto.PublishYear,
         PageCount = dto.PageCount,
         Publisher = dto.Publisher ?? "",
@@ -76,6 +108,7 @@ public class BookService : IBookService
         public string? Author { get; set; }
         public string? Isbn { get; set; }
         public string? Genre { get; set; }
+        public List<string>? Genres { get; set; }
         public string? Category { get; set; }
         public int PublishYear { get; set; }
         public int PageCount { get; set; }

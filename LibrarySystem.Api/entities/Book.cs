@@ -7,6 +7,8 @@ public class Book : BaseEntity
     public string Isbn { get; set; } = string.Empty;
     public List<GenreType> Genres { get; set; } = [];
     public int PublishYear { get; set; }
+    public string Publisher { get; set; } = string.Empty;
+    public int PageCount { get; set; }
     public bool IsAvailable { get; set; } = true;
 
     public ICollection<BorrowRecord>? BorrowRecords { get; set; }

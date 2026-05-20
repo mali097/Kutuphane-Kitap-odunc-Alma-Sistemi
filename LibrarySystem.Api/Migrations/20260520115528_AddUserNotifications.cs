@@ -6,20 +6,23 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LibrarySystem.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBookRatingTable : Migration
+    public partial class AddUserNotifications : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "BookRatings",
+                name: "UserNotifications",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    BookId = table.Column<int>(type: "int", nullable: false),
-                    Score = table.Column<decimal>(type: "decimal(3,1)", precision: 3, scale: 1, nullable: false),
+                    BorrowRecordId = table.Column<int>(type: "int", nullable: true),
+                    NotificationType = table.Column<int>(type: "int", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OccurredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<int>(type: "int", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -28,37 +31,37 @@ namespace LibrarySystem.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BookRatings", x => x.Id);
+                    table.PrimaryKey("PK_UserNotifications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_BookRatings_Books_BookId",
-                        column: x => x.BookId,
-                        principalTable: "Books",
+                        name: "FK_UserNotifications_BorrowRecords_BorrowRecordId",
+                        column: x => x.BorrowRecordId,
+                        principalTable: "BorrowRecords",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_BookRatings_Users_UserId",
+                        name: "FK_UserNotifications_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_BookRatings_BookId",
-                table: "BookRatings",
-                column: "BookId");
+                name: "IX_UserNotifications_BorrowRecordId",
+                table: "UserNotifications",
+                column: "BorrowRecordId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BookRatings_UserId_BookId",
-                table: "BookRatings",
-                columns: new[] { "UserId", "BookId" },
-                unique: true);
+                name: "IX_UserNotifications_UserId_OccurredAt",
+                table: "UserNotifications",
+                columns: new[] { "UserId", "OccurredAt" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "BookRatings");
+            migrationBuilder.DropTable(
+                name: "UserNotifications");
         }
     }
 }

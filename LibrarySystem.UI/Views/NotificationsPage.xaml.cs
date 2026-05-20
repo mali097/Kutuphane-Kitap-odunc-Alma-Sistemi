@@ -1,4 +1,3 @@
-using Microsoft.Maui.Storage;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
 using LibrarySystem.UI.Services;
@@ -7,7 +6,7 @@ namespace LibrarySystem.UI.Views;
 
 public partial class NotificationsPage : ContentPage
 {
-    private const string ReadIdsKey = "delivery_notif_read_ids";
+    private readonly INotificationService _notificationService;
     private readonly IBorrowService _borrowService;
     private List<DeliveryNotificationItem> _all = new();
 
@@ -17,6 +16,7 @@ public partial class NotificationsPage : ContentPage
     public NotificationsPage()
     {
         InitializeComponent();
+        _notificationService = new NotificationService();
         _borrowService = new BorrowService();
     }
 
@@ -39,66 +39,71 @@ public partial class NotificationsPage : ContentPage
             return;
         }
 
-        var borrows = await _borrowService.GetUserBorrowsAsync(user.Id);
-        var readIds = LoadReadIds();
+        _all = await _notificationService.GetUserNotificationsAsync(user.Id);
+
+        if (_all.Count == 0)
+        {
+            _all = await BuildFallbackFromBorrowsAsync(user.Id);
+        }
+
+        ApplyFilter();
+    }
+
+    private async Task<List<DeliveryNotificationItem>> BuildFallbackFromBorrowsAsync(int userId)
+    {
+        var borrows = await _borrowService.GetMyBorrowsAsync();
         var list = new List<DeliveryNotificationItem>();
 
         foreach (var b in borrows.OrderByDescending(x => x.BorrowDate))
         {
-            var receivedId = $"recv-{b.Id}";
             list.Add(new DeliveryNotificationItem
             {
-                Id = receivedId,
-                Title = "Teslim aldınız",
-                Detail = $"“{b.BookTitle}” ödünç kaydınız oluşturuldu. Son teslim: {b.DueDate:dd.MM.yyyy}.",
+                Id = $"recv-{b.Id}",
+                Title = "Kitap teslim alındı",
+                Detail = $"{b.BorrowDate:dd.MM.yyyy} tarihinde \"{b.BookTitle}\" kitabını teslim aldınız. {b.DueDate:dd.MM.yyyy} tarihine kadar kitabı teslim etmeniz gerekiyor.",
                 OccurredAt = b.BorrowDate,
                 RelativeTimeText = ToRelativeTr(b.BorrowDate),
                 IconGlyph = "📗",
                 IconBackground = Color.FromArgb("#5E4BB6"),
-                StatusDotColor = readIds.Contains(receivedId) ? Color.FromArgb("#C5C2CC") : Color.FromArgb("#3B7CFF"),
-                IsRead = readIds.Contains(receivedId)
+                StatusDotColor = Color.FromArgb("#3B7CFF"),
+                IsRead = false
             });
 
             if (b.IsReturned && b.ReturnDate.HasValue)
             {
-                var returnedId = $"ret-{b.Id}";
                 var rd = b.ReturnDate.Value;
+                var daysLate = (rd.Date - b.DueDate.Date).Days;
+                var onTime = daysLate <= 0;
+
                 list.Add(new DeliveryNotificationItem
                 {
-                    Id = returnedId,
-                    Title = "Kitap teslim edildiniz",
-                    Detail = $"“{b.BookTitle}” iade işleminiz tamamlandı. İade tarihi: {rd:dd.MM.yyyy}.",
+                    Id = $"ret-{b.Id}",
+                    Title = onTime ? "Zamanında iade" : "Gecikmiş iade",
+                    Detail = onTime
+                        ? $"{rd:dd.MM.yyyy} tarihinde \"{b.BookTitle}\" kitabını zamanında teslim ettiniz."
+                        : $"{rd:dd.MM.yyyy} tarihinde \"{b.BookTitle}\" kitabını {daysLate} gün geç teslim ettiniz.",
                     OccurredAt = rd,
                     RelativeTimeText = ToRelativeTr(rd),
-                    IconGlyph = "✅",
-                    IconBackground = Color.FromArgb("#2EA77E"),
-                    StatusDotColor = readIds.Contains(returnedId) ? Color.FromArgb("#C5C2CC") : Color.FromArgb("#3B7CFF"),
-                    IsRead = readIds.Contains(returnedId)
+                    IconGlyph = onTime ? "✅" : "⚠️",
+                    IconBackground = Color.FromArgb(onTime ? "#2EA77E" : "#C62828"),
+                    StatusDotColor = Color.FromArgb(onTime ? "#2EA77E" : "#C62828"),
+                    IsRead = false
                 });
             }
         }
 
-        _all = list.OrderByDescending(n => n.OccurredAt).ToList();
-        ApplyFilter();
+        return list.OrderByDescending(n => n.OccurredAt).ToList();
     }
-
-    private static HashSet<string> LoadReadIds()
-    {
-        var raw = Preferences.Get(ReadIdsKey, string.Empty);
-        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
-    }
-
-    private static void SaveReadIds(HashSet<string> ids)
-        => Preferences.Set(ReadIdsKey, string.Join(',', ids));
 
     private static string ToRelativeTr(DateTime dt)
     {
-        var span = DateTime.Now - dt;
+        var local = dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+        var span = DateTime.Now - local;
         if (span.TotalSeconds < 45) return "Az önce";
         if (span.TotalMinutes < 60) return $"{Math.Max(1, (int)span.TotalMinutes)} dk önce";
         if (span.TotalHours < 24) return $"{Math.Max(1, (int)span.TotalHours)} saat önce";
         if (span.TotalDays < 7) return $"{Math.Max(1, (int)span.TotalDays)} gün önce";
-        return dt.ToString("dd.MM.yyyy");
+        return local.ToString("dd.MM.yyyy");
     }
 
     private void ApplyFilter()
@@ -145,16 +150,14 @@ public partial class NotificationsPage : ContentPage
         ApplyFilter();
     }
 
-    private void OnNotificationTapped(object? sender, EventArgs e)
+    private async void OnNotificationTapped(object? sender, EventArgs e)
     {
         if (sender is not VisualElement { BindingContext: DeliveryNotificationItem item })
             return;
 
-        var ids = LoadReadIds();
-        if (!ids.Contains(item.Id))
+        if (!item.IsRead && int.TryParse(item.Id, out var notificationId))
         {
-            ids.Add(item.Id);
-            SaveReadIds(ids);
+            await _notificationService.MarkAsReadAsync(notificationId);
         }
 
         item.IsRead = true;

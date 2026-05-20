@@ -8,6 +8,8 @@ public class FavoriteBook
     public string BookTitle { get; set; } = string.Empty;
     public string BookAuthor { get; set; } = string.Empty;
     public string BookCategory { get; set; } = string.Empty;
+    public string BookPublisher { get; set; } = string.Empty;
+    public int BookPageCount { get; set; }
     public DateTime AddedAt { get; set; } = DateTime.Now;
     public string RatingDisplay { get; set; } = "4.6";
 }
