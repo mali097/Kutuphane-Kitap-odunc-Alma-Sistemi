@@ -24,5 +24,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ChangePasswordPage), typeof(ChangePasswordPage));
         Routing.RegisterRoute(nameof(BorrowPage), typeof(BorrowPage));
         Routing.RegisterRoute(nameof(AddEditBookPage), typeof(AddEditBookPage));
+        Routing.RegisterRoute(nameof(SupportPage), typeof(SupportPage));
     }
 }

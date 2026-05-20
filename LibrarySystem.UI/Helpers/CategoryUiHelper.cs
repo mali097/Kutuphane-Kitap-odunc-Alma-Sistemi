@@ -39,8 +39,8 @@ public static class CategoryUiHelper
     {
         var card = new Border
         {
-            BackgroundColor = Colors.White,
-            Stroke = Color.FromArgb("#E8E4DC"),
+            BackgroundColor = ThemeHelper.GetColor("CardBackgroundColor"),
+            Stroke = ThemeHelper.GetColor("CardStrokeColor"),
             StrokeShape = new RoundRectangle { CornerRadius = 14 },
             Padding = new Thickness(10, 8),
             Margin = new Thickness(0, 0, 0, 0)
@@ -68,7 +68,7 @@ public static class CategoryUiHelper
             Text = category.Name,
             FontAttributes = FontAttributes.Bold,
             FontSize = 13,
-            TextColor = Color.FromArgb("#1B1530"),
+            TextColor = ThemeHelper.GetColor("TextPrimaryColor"),
             LineBreakMode = LineBreakMode.TailTruncation,
             MaxLines = 2
         };
@@ -77,7 +77,7 @@ public static class CategoryUiHelper
         {
             Text = category.BookCountText,
             FontSize = 11,
-            TextColor = Color.FromArgb("#6B6578")
+            TextColor = ThemeHelper.GetColor("TextSecondaryColor")
         };
 
         var textStack = new VerticalStackLayout
@@ -91,7 +91,7 @@ public static class CategoryUiHelper
         {
             Text = "›",
             FontSize = 18,
-            TextColor = Color.FromArgb("#B0A8C8"),
+            TextColor = ThemeHelper.GetColor("TextMutedColor"),
             VerticalOptions = LayoutOptions.Center
         };
 

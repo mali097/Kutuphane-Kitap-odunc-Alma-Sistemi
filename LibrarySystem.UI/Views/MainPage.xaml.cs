@@ -9,7 +9,6 @@ public partial class MainPage : ContentPage
     private readonly IBookService _bookService;
     private List<Book> _allBooks = new();
     private List<BookCategoryItem> _categories = new();
-    private int? _selectedCategoryId;
 
     public MainPage()
     {
@@ -38,9 +37,9 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         var user = SessionHelper.CurrentUser;
-        WelcomeLabel.Text = $"👋 Hoş geldin, {user?.Username ?? "Kullanıcı"}!";
         ProfileUsernameLabel.Text = user?.Username ?? "Profil";
-        ApplyCategoryFromNavigation();
+        CategoryFilterState.SelectedCategoryId = null;
+        UpdateWelcomeMessage();
         await LoadBooksAsync();
         await LoadCategoriesAsync();
 
@@ -67,24 +66,29 @@ public partial class MainPage : ContentPage
         await Shell.Current.GoToAsync(nameof(CategoryDetailPage));
     }
 
+    private void UpdateWelcomeMessage()
+    {
+        var user = SessionHelper.CurrentUser;
+        WelcomeLabel.Text = $"👋 Hoş geldin, {user?.Username ?? "Kullanıcı"}!";
+    }
+
     private void ShowHomeTab()
     {
         HomePanel.IsVisible = true;
         CategoriesPanel.IsVisible = false;
-        TabHomeBtn.BackgroundColor = Color.FromArgb("#FFFFFF");
-        TabHomeBtn.TextColor = Color.FromArgb("#2B1B4F");
-        TabCategoriesBtn.BackgroundColor = Colors.Transparent;
-        TabCategoriesBtn.TextColor = Color.FromArgb("#6C6F7A");
+        UpdateWelcomeMessage();
+        ThemeHelper.ApplyBottomTab(
+            TabHomeBtn,
+            TabCategoriesBtn, TabFavoritesBtn, TabNotificationsBtn, TabSettingsBtn);
     }
 
     private void ShowCategoriesTab()
     {
         HomePanel.IsVisible = false;
         CategoriesPanel.IsVisible = true;
-        TabCategoriesBtn.BackgroundColor = Color.FromArgb("#FFFFFF");
-        TabCategoriesBtn.TextColor = Color.FromArgb("#5E4BB6");
-        TabHomeBtn.BackgroundColor = Colors.Transparent;
-        TabHomeBtn.TextColor = Color.FromArgb("#6C6F7A");
+        ThemeHelper.ApplyBottomTab(
+            TabCategoriesBtn,
+            TabHomeBtn, TabFavoritesBtn, TabNotificationsBtn, TabSettingsBtn);
         CategoryUiHelper.FillTwoColumnGrid(CategoriesGrid, _categories, OpenCategoryAsync);
     }
 
@@ -106,9 +110,6 @@ public partial class MainPage : ContentPage
     private void ApplyBookFilter()
     {
         IEnumerable<Book> q = _allBooks;
-
-        if (_selectedCategoryId is int categoryId)
-            q = q.Where(b => BookCategories.MatchesBook(categoryId, b.Category));
 
         var term = KitapSearchBar.Text?.Trim();
         if (!string.IsNullOrWhiteSpace(term))
@@ -184,17 +185,6 @@ public partial class MainPage : ContentPage
 
     private void TabCategories_Clicked(object sender, EventArgs e)
         => ShowCategoriesTab();
-
-    public void ApplyCategoryFromNavigation()
-    {
-        if (CategoryFilterState.SelectedCategoryId is not int id) return;
-        _selectedCategoryId = id;
-        CategoryFilterState.SelectedCategoryId = null;
-
-        var name = BookCategories.GetById(id)?.Name ?? "Kategori";
-        WelcomeLabel.Text = $"📂 {name} kitapları";
-        ApplyBookFilter();
-    }
 
     private async void TabNotifications_Clicked(object sender, EventArgs e)
         => await TabNavigation.GoToNotificationsAsync();

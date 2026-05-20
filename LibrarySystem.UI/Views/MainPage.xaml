@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:conv="clr-namespace:LibrarySystem.UI.Converters"
              x:Class="LibrarySystem.UI.Views.MainPage"
-             Title="Ana Sayfa"
-             BackgroundColor="#141624">
+             Title="Ana Sayfa">
 
     <ContentPage.Resources>
         <conv:BoolToStatusTextConverter x:Key="StatusText" />
@@ -76,25 +75,24 @@
         <ScrollView x:Name="HomePanel" Grid.Row="1">
             <VerticalStackLayout Padding="14" Spacing="14">
 
-                <Border BackgroundColor="#FFF9F2"
-                        Stroke="#E8E4DC"
+                <Border Style="{StaticResource ThemedCardAlt}"
                         StrokeShape="RoundRectangle 20"
                         Padding="14"
                         MinimumHeightRequest="280">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
                             <Border WidthRequest="36" HeightRequest="36"
-                                    BackgroundColor="#5E4BB6"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}"
                                     StrokeShape="RoundRectangle 12">
                                 <Label Text="✍️" HorizontalOptions="Center" VerticalOptions="Center" FontSize="18" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="Yazar düşünceleri"
-                                       TextColor="#1B1530"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                        FontAttributes="Bold"
                                        FontSize="16" />
                                 <Label Text="Yazarların görüşleri ve önerileri"
-                                       TextColor="#6B6578"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                        FontSize="12" />
                             </VerticalStackLayout>
                         </Grid>
@@ -104,25 +102,24 @@
                                         SelectionMode="None">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BackgroundColor="White"
-                                            Stroke="#E8E4DC"
+                                    <Border Style="{StaticResource ThemedCard}"
                                             StrokeShape="RoundRectangle 14"
                                             Padding="12"
                                             Margin="0,0,0,10">
                                         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
                                             <Border WidthRequest="40" HeightRequest="40"
                                                     StrokeShape="RoundRectangle 20"
-                                                    BackgroundColor="#5E4BB6">
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}">
                                                 <Label Text="👤" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
                                             </Border>
                                             <Label Grid.Column="1"
                                                    Text="{Binding Author}"
                                                    FontAttributes="Bold"
-                                                   TextColor="#1B1F2A"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                                    Margin="10,0,0,0"/>
                                             <Label Grid.Row="1" Grid.Column="1"
                                                    Text="{Binding Text}"
-                                                   TextColor="#4A4758"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                                    FontSize="12"
                                                    Margin="10,4,0,0"/>
                                         </Grid>
@@ -133,8 +130,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border BackgroundColor="#FFF9F2"
-                        Stroke="#E8E4DC"
+                <Border Style="{StaticResource ThemedCardAlt}"
                         StrokeShape="RoundRectangle 20"
                         Padding="14"
                         MinimumHeightRequest="280">
@@ -147,11 +143,11 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="En çok okunan kitaplar"
-                                       TextColor="#1B1530"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                        FontAttributes="Bold"
                                        FontSize="16" />
                                 <Label Text="Bu dönem öne çıkan eserler"
-                                       TextColor="#6B6578"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                        FontSize="12" />
                             </VerticalStackLayout>
                         </Grid>
@@ -205,8 +201,8 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border BackgroundColor="#2B1B4F"
-                        Stroke="#FFFFFF22"
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource InversePanelBgColorLight}, Dark={StaticResource InversePanelBgColorDark}}"
+                        Stroke="{AppThemeBinding Light={StaticResource InversePanelStrokeColorLight}, Dark={StaticResource InversePanelStrokeColorDark}}"
                         StrokeShape="RoundRectangle 18"
                         Padding="14">
                     <VerticalStackLayout Spacing="10">
@@ -272,19 +268,19 @@
         <ScrollView x:Name="CategoriesPanel"
                     Grid.Row="1"
                     IsVisible="False"
-                    BackgroundColor="#F5F5F8">
+                    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
             <VerticalStackLayout Padding="14,10" Spacing="12">
                 <Grid ColumnDefinitions="*,Auto" Padding="2,0">
                     <Label Text="Tüm Kategoriler"
                            FontAttributes="Bold"
                            FontSize="15"
-                           TextColor="#1B1530"
+                           TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                            VerticalOptions="Center" />
                     <Label x:Name="CategoryCountLabel"
                            Grid.Column="1"
                            Text="22 kategori"
                            FontSize="13"
-                           TextColor="#6B6578"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                            VerticalOptions="Center" />
                 </Grid>
                 <Grid x:Name="CategoriesGrid" />
@@ -292,7 +288,7 @@
         </ScrollView>
 
         <Border Grid.Row="2"
-                BackgroundColor="#F3F3F6"
+                Style="{StaticResource ThemedTabBar}"
                 StrokeShape="RoundRectangle 24"
                 Padding="14,10"
                 Margin="14,8,14,14">
@@ -300,35 +296,27 @@
                 <Button x:Name="TabHomeBtn"
                         Grid.Column="0"
                         Text="🏠&#10;Ana Sayfa"
-                        BackgroundColor="#FFFFFF"
-                        TextColor="#2B1B4F"
-                        CornerRadius="18"
-                        FontSize="11"
+                        Style="{StaticResource ThemedTabInactive}"
                         Clicked="TabHome_Clicked" />
                 <Button x:Name="TabCategoriesBtn"
                         Grid.Column="1"
                         Text="🗂️&#10;Kategoriler"
-                        BackgroundColor="Transparent"
-                        TextColor="#6C6F7A"
-                        FontSize="11"
+                        Style="{StaticResource ThemedTabInactive}"
                         Clicked="TabCategories_Clicked" />
-                <Button Grid.Column="2"
+                <Button x:Name="TabFavoritesBtn"
+                        Grid.Column="2"
                         Text="🔖&#10;Favorilerim"
-                        BackgroundColor="Transparent"
-                        TextColor="#6C6F7A"
-                        FontSize="11"
+                        Style="{StaticResource ThemedTabInactive}"
                         Clicked="Favorites_Clicked" />
-                <Button Grid.Column="3"
+                <Button x:Name="TabNotificationsBtn"
+                        Grid.Column="3"
                         Text="🔔&#10;Bildirimler"
-                        BackgroundColor="Transparent"
-                        TextColor="#6C6F7A"
-                        FontSize="11"
+                        Style="{StaticResource ThemedTabInactive}"
                         Clicked="TabNotifications_Clicked" />
-                <Button Grid.Column="4"
+                <Button x:Name="TabSettingsBtn"
+                        Grid.Column="4"
                         Text="⚙️&#10;Ayarlar"
-                        BackgroundColor="Transparent"
-                        TextColor="#6C6F7A"
-                        FontSize="11"
+                        Style="{StaticResource ThemedTabInactive}"
                         Clicked="TabSettings_Clicked" />
             </Grid>
         </Border>

@@ -17,6 +17,10 @@ public partial class SettingsPage : ContentPage
 
         UsernameLabel.Text = user.Username;
         EmailLabel.Text = $"{user.Username}@email.com";
+
+        ThemeHelper.ApplyBottomTab(
+            TabSettingsBtn,
+            TabHomeBtn, TabCategoriesBtn, TabFavoritesBtn, TabNotificationsBtn);
     }
 
     private async void Back_Clicked(object sender, EventArgs e)
@@ -35,17 +39,20 @@ public partial class SettingsPage : ContentPage
         await DisplayAlert("E-posta Adresi", email, "Tamam");
     }
 
-    private async void Appearance_Tapped(object? sender, EventArgs e)
+    private async void Theme_Tapped(object? sender, EventArgs e)
     {
-        var pick = await DisplayActionSheet("Görünüm", "İptal", null, "Açık tema", "Koyu tema", "Sistem varsayılanı");
-        if (pick is null or "İptal") return;
+        var pick = await DisplayActionSheet(
+            "Tema", "İptal", null,
+            "Açık tema", "Koyu tema", "Sistem varsayılanı");
 
-        if (pick == "Açık tema")
-            Application.Current!.UserAppTheme = AppTheme.Light;
-        else if (pick == "Koyu tema")
-            Application.Current!.UserAppTheme = AppTheme.Dark;
-        else
-            Application.Current!.UserAppTheme = AppTheme.Unspecified;
+        var choice = ThemeHelper.ChoiceFromActionSheet(pick);
+        if (choice is null) return;
+
+        ThemeHelper.ApplyThemeChoice(choice);
+
+        ThemeHelper.ApplyBottomTab(
+            TabSettingsBtn,
+            TabHomeBtn, TabCategoriesBtn, TabFavoritesBtn, TabNotificationsBtn);
     }
 
     private async void About_Tapped(object? sender, EventArgs e)
@@ -54,9 +61,7 @@ public partial class SettingsPage : ContentPage
             "Tamam");
 
     private async void Help_Tapped(object? sender, EventArgs e)
-        => await DisplayAlert("Yardım ve Destek",
-            "Sorularınız için: destek@kutuphane-ornek.com",
-            "Tamam");
+        => await Shell.Current.GoToAsync(nameof(SupportPage));
 
     private async void TabHome_Clicked(object sender, EventArgs e)
         => await TabNavigation.GoToHomeAsync();

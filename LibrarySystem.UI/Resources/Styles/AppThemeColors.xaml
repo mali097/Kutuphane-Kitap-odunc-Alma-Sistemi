@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===== Sayfa arka planları ===== -->
+    <Color x:Key="PageBackgroundColorLight">#F5F5F8</Color>
+    <Color x:Key="PageBackgroundColorDark">#141624</Color>
+
+    <Color x:Key="SubBackgroundColorLight">#EDEAF6</Color>
+    <Color x:Key="SubBackgroundColorDark">#1F1E3A</Color>
+
+    <!-- ===== Kart yüzeyleri ===== -->
+    <Color x:Key="CardBackgroundColorLight">#FFFFFF</Color>
+    <Color x:Key="CardBackgroundColorDark">#2B1B4F</Color>
+
+    <Color x:Key="CardAltBackgroundColorLight">#FFF9F2</Color>
+    <Color x:Key="CardAltBackgroundColorDark">#2B2348</Color>
+
+    <Color x:Key="CardStrokeColorLight">#E8E4DC</Color>
+    <Color x:Key="CardStrokeColorDark">#3D2F66</Color>
+
+    <Color x:Key="ListRowBackgroundColorLight">#FFFFFFCC</Color>
+    <Color x:Key="ListRowBackgroundColorDark">#00000033</Color>
+
+    <Color x:Key="DividerColorLight">#F0EEF5</Color>
+    <Color x:Key="DividerColorDark">#FFFFFF14</Color>
+
+    <!-- ===== Metin renkleri ===== -->
+    <Color x:Key="TextPrimaryColorLight">#1B1530</Color>
+    <Color x:Key="TextPrimaryColorDark">#FFFFFF</Color>
+
+    <Color x:Key="TextSecondaryColorLight">#6B6578</Color>
+    <Color x:Key="TextSecondaryColorDark">#B0A8C8</Color>
+
+    <Color x:Key="TextMutedColorLight">#A09BAE</Color>
+    <Color x:Key="TextMutedColorDark">#7C75A0</Color>
+
+    <!-- ===== Vurgu renkleri ===== -->
+    <Color x:Key="AccentPurpleColorLight">#5E4BB6</Color>
+    <Color x:Key="AccentPurpleColorDark">#8772D6</Color>
+
+    <Color x:Key="AccentSoftPurpleColorLight">#EDE9FF</Color>
+    <Color x:Key="AccentSoftPurpleColorDark">#3A2E66</Color>
+
+    <Color x:Key="AccentChevronColorLight">#C5C0D8</Color>
+    <Color x:Key="AccentChevronColorDark">#7C75A0</Color>
+
+    <!-- ===== Alt sekme (tab bar) ===== -->
+    <Color x:Key="TabBarBackgroundColorLight">#F3F3F6</Color>
+    <Color x:Key="TabBarBackgroundColorDark">#1F1E3A</Color>
+
+    <Color x:Key="TabActiveBgColorLight">#FFFFFF</Color>
+    <Color x:Key="TabActiveBgColorDark">#3A2E66</Color>
+
+    <Color x:Key="TabActiveTextColorLight">#2B1B4F</Color>
+    <Color x:Key="TabActiveTextColorDark">#FFFFFF</Color>
+
+    <Color x:Key="TabInactiveColorLight">#6C6F7A</Color>
+    <Color x:Key="TabInactiveColorDark">#B0A8C8</Color>
+
+    <!-- ===== Header (mor gradient sabit) yardımcı renkleri ===== -->
+    <Color x:Key="HeaderSearchBgColorLight">#00000022</Color>
+    <Color x:Key="HeaderSearchBgColorDark">#00000044</Color>
+
+    <Color x:Key="HeaderSearchStrokeColorLight">#FFFFFF33</Color>
+    <Color x:Key="HeaderSearchStrokeColorDark">#FFFFFF33</Color>
+
+    <Color x:Key="HeaderSearchTextColorLight">#FFFFFF</Color>
+    <Color x:Key="HeaderSearchTextColorDark">#FFFFFF</Color>
+
+    <Color x:Key="HeaderSearchPlaceholderColorLight">#E8E0FF</Color>
+    <Color x:Key="HeaderSearchPlaceholderColorDark">#E8E0FF</Color>
+
+    <!-- ===== Koyu içerikli ikinci panel (Mevcut Kitaplarım vb.) ===== -->
+    <Color x:Key="InversePanelBgColorLight">#2B1B4F</Color>
+    <Color x:Key="InversePanelBgColorDark">#1B1140</Color>
+
+    <Color x:Key="InversePanelStrokeColorLight">#FFFFFF22</Color>
+    <Color x:Key="InversePanelStrokeColorDark">#FFFFFF14</Color>
+
+</ResourceDictionary>
