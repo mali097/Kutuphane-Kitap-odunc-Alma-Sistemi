@@ -2,8 +2,8 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:LibrarySystem.UI.Controls"
-             x:Class="LibrarySystem.UI.Views.LoginPage"
-             Title="Giriş"
+             x:Class="LibrarySystem.UI.Views.RegisterPage"
+             Title="Kayıt Ol"
              Shell.NavBarIsVisible="False"
              BackgroundColor="#F3F1F8">
 
@@ -27,9 +27,10 @@
 
     <Grid BackgroundColor="#F3F1F8">
         <controls:AuthPageHeader x:Name="AuthHeader"
-                                 Title="Giriş Yap"
-                                 Subtitle="Hesabınıza giriş yaparak kitap dünyasına devam edin"
-                                 Illustration="Login"
+                                 Title="Kayıt Ol"
+                                 Subtitle="Yeni hesap oluşturarak kitap dünyamıza katılın"
+                                 Illustration="Register"
+                                 ShowBackButton="True"
                                  BackClicked="AuthHeader_BackClicked"
                                  VerticalOptions="Start" />
 
@@ -37,39 +38,29 @@
                 BackgroundColor="White"
                 StrokeThickness="0"
                 StrokeShape="RoundRectangle 28,28,0,0"
-                Padding="22,28,22,24"
+                Padding="22,24,22,20"
                 VerticalOptions="Fill">
             <ScrollView>
-                <VerticalStackLayout Spacing="18">
+                <VerticalStackLayout Spacing="16">
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Button x:Name="StudentRoleTab"
-                                Text="Öğrenci Girişi"
-                                FontSize="13"
-                                FontAttributes="Bold"
-                                TextColor="White"
-                                BackgroundColor="#6B46C1"
-                                CornerRadius="12"
-                                Padding="12,10"
-                                Clicked="StudentRoleTab_Clicked" />
-                        <Button x:Name="AuthorRoleTab"
-                                Grid.Column="1"
-                                Text="Yazar Girişi"
-                                FontSize="13"
-                                FontAttributes="Bold"
-                                TextColor="#6B46C1"
-                                BackgroundColor="#EDE9FF"
-                                CornerRadius="12"
-                                Padding="12,10"
-                                Clicked="AuthorRoleTab_Clicked" />
-                    </Grid>
-
-                    <Label x:Name="AuthorInfoLabel"
-                           Text="Yazar hesapları yönetici tarafından oluşturulur. Hesabınız varsa giriş yapın."
-                           TextColor="#6B6578"
-                           FontSize="12"
-                           LineBreakMode="WordWrap"
-                           IsVisible="False" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Ad Soyad" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="👤"
+                                       FontSize="16"
+                                       TextColor="#6B46C1"
+                                       VerticalOptions="Center" />
+                                <Entry x:Name="FullNameEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Adınızı ve soyadınızı girin"
+                                       PlaceholderColor="#A09BAE"
+                                       TextColor="#1B1530"
+                                       BackgroundColor="Transparent"
+                                       ReturnType="Next" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="6">
                         <Label Text="E-posta" Style="{StaticResource FieldLabel}" />
@@ -101,7 +92,7 @@
                                        VerticalOptions="Center" />
                                 <Entry x:Name="PasswordEntry"
                                        Grid.Column="1"
-                                       Placeholder="Şifrenizi girin"
+                                       Placeholder="Şifrenizi oluşturun"
                                        PlaceholderColor="#A09BAE"
                                        TextColor="#1B1530"
                                        IsPassword="True"
@@ -134,38 +125,36 @@
                                            Color="#6B46C1" />
                         <Label x:Name="BusyText"
                                Grid.Column="1"
-                               Text="Giriş yapılıyor..."
+                               Text="Kayıt oluşturuluyor..."
                                TextColor="#6B6578"
                                FontSize="12"
                                VerticalOptions="Center"
                                Margin="10,0,0,0" />
                     </Grid>
 
-                    <Button x:Name="LoginButton"
-                            Text="Giriş Yap"
+                    <Button x:Name="RegisterButton"
+                            Text="Kayıt Ol"
                             TextColor="White"
                             FontAttributes="Bold"
                             FontSize="16"
                             BackgroundColor="#6B46C1"
                             CornerRadius="16"
                             Padding="16,14"
-                            Clicked="Login_Clicked" />
+                            Margin="0,4,0,0"
+                            Clicked="Register_Clicked" />
 
-                    <HorizontalStackLayout x:Name="RegisterFooter"
-                                           HorizontalOptions="Center"
-                                           Spacing="4"
-                                           Margin="0,8,0,0">
-                        <Label Text="Hesabın yok mu?"
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="4" Margin="0,8,0,0">
+                        <Label Text="Zaten hesabın var mı?"
                                TextColor="#6B6578"
                                FontSize="14"
                                VerticalOptions="Center" />
-                        <Button Text="Kayıt Ol"
+                        <Button Text="Giriş Yap"
                                 FontSize="14"
                                 FontAttributes="Bold"
                                 TextColor="#6B46C1"
                                 BackgroundColor="Transparent"
                                 Padding="0"
-                                Clicked="GoRegister_Clicked" />
+                                Clicked="GoLogin_Clicked" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </ScrollView>

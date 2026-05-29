@@ -33,9 +33,15 @@ public partial class UserPanelPage : ContentPage
             return;
         }
 
-        NameLabel.Text = user.FullName ?? user.Username;
-        UsernameLabel.Text = $"@{user.Username}";
-        RoleLabel.Text = SessionHelper.IsAdmin ? "Yönetici" : "Üye";
+        SessionHelper.NormalizeProfile(user);
+        var hasFullName = !string.IsNullOrWhiteSpace(user.FullName);
+        NameLabel.Text = hasFullName ? user.FullName!.Trim() : SessionHelper.GetDisplayUsername(user);
+        UsernameLabel.IsVisible = !hasFullName;
+        UsernameLabel.Text = SessionHelper.GetDisplayUsername(user);
+        EmailLabel.Text = string.IsNullOrWhiteSpace(user.Email) ? "—" : user.Email;
+        RoleLabel.Text = SessionHelper.IsAdmin ? "Yönetici"
+            : SessionHelper.IsAuthor ? "Yazar"
+            : "Üye";
 
         MembershipDateLabel.Text = user.CreatedAt.HasValue
             ? user.CreatedAt.Value.ToString("d MMMM yyyy", new CultureInfo("tr-TR"))

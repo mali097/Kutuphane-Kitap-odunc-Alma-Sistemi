@@ -1,3 +1,4 @@
+using LibrarySystem.UI.Controls;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Services;
 
@@ -7,11 +8,85 @@ public partial class LoginPage : ContentPage
 {
     private readonly IAuthService _authService;
     private bool _showPassword;
+    private bool _isAuthorLoginMode;
 
     public LoginPage()
     {
         InitializeComponent();
         _authService = new AuthService();
+        ApplyLoginModeUi();
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        AuthHeader.ShowBackButton = Navigation.NavigationStack.Count > 1;
+    }
+
+    private async void AuthHeader_BackClicked(object? sender, EventArgs e)
+    {
+        if (Navigation.NavigationStack.Count > 1)
+        {
+            await Navigation.PopAsync();
+        }
+    }
+
+    private void StudentRoleTab_Clicked(object sender, EventArgs e)
+    {
+        if (!_isAuthorLoginMode)
+        {
+            return;
+        }
+
+        _isAuthorLoginMode = false;
+        ApplyLoginModeUi();
+    }
+
+    private void AuthorRoleTab_Clicked(object sender, EventArgs e)
+    {
+        if (_isAuthorLoginMode)
+        {
+            return;
+        }
+
+        _isAuthorLoginMode = true;
+        ApplyLoginModeUi();
+    }
+
+    private void ApplyLoginModeUi()
+    {
+        ErrorLabel.IsVisible = false;
+
+        if (_isAuthorLoginMode)
+        {
+            AuthHeader.Title = "Yazar Girişi";
+            AuthHeader.Subtitle = "Yazar paneline giriş yaparak kitap önerilerinizi paylaşın";
+            AuthHeader.Illustration = AuthHeaderIllustration.Register;
+            LoginButton.Text = "Yazar Girişi";
+
+            AuthorRoleTab.BackgroundColor = Color.FromArgb("#6B46C1");
+            AuthorRoleTab.TextColor = Colors.White;
+            StudentRoleTab.BackgroundColor = Color.FromArgb("#EDE9FF");
+            StudentRoleTab.TextColor = Color.FromArgb("#6B46C1");
+
+            AuthorInfoLabel.IsVisible = true;
+            RegisterFooter.IsVisible = false;
+        }
+        else
+        {
+            AuthHeader.Title = "Giriş Yap";
+            AuthHeader.Subtitle = "Hesabınıza giriş yaparak kitap dünyasına devam edin";
+            AuthHeader.Illustration = AuthHeaderIllustration.Login;
+            LoginButton.Text = "Giriş Yap";
+
+            StudentRoleTab.BackgroundColor = Color.FromArgb("#6B46C1");
+            StudentRoleTab.TextColor = Colors.White;
+            AuthorRoleTab.BackgroundColor = Color.FromArgb("#EDE9FF");
+            AuthorRoleTab.TextColor = Color.FromArgb("#6B46C1");
+
+            AuthorInfoLabel.IsVisible = false;
+            RegisterFooter.IsVisible = true;
+        }
     }
 
     private void TogglePassword_Clicked(object sender, EventArgs e)
@@ -22,38 +97,46 @@ public partial class LoginPage : ContentPage
     }
 
     private async void GoRegister_Clicked(object sender, EventArgs e)
-        => await DisplayAlert("Bilgi", "Kayıt ekranı şu an devre dışı.", "Tamam");
+        => await Navigation.PushAsync(new RegisterPage());
 
     private async void Login_Clicked(object sender, EventArgs e)
     {
         ErrorLabel.IsVisible = false;
         ErrorLabel.Text = string.Empty;
 
-        var username = UsernameEntry.Text?.Trim() ?? "";
-        var password = PasswordEntry.Text ?? "";
+        var email = EmailEntry.Text?.Trim() ?? string.Empty;
+        var password = PasswordEntry.Text ?? string.Empty;
 
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            ShowError("Kullanıcı adı ve şifre zorunludur.");
+            ShowError("E-posta ve şifre zorunludur.");
             return;
         }
+
+        var expectedRole = _isAuthorLoginMode ? "Author" : "Student";
 
         SetBusy(true);
         try
         {
-            var user = await _authService.LoginAsync(username, password);
-            if (user == null)
+            var result = await _authService.LoginAsync(email, password, expectedRole);
+            if (!result.IsSuccess || result.User is null)
             {
-                ShowError("Kullanıcı adı veya şifre hatalı.");
+                ShowError(result.ErrorMessage ?? "E-posta veya şifre hatalı.");
                 return;
             }
 
-            SessionHelper.CurrentUser = user;
+            SessionHelper.CurrentUser = result.User;
 
-            var isAdmin = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase);
-            await Shell.Current.GoToAsync(isAdmin ? nameof(AdminPage) : "//MainPage");
+            if (string.Equals(result.User.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                await Shell.Current.GoToAsync(nameof(AdminPage));
+            }
+            else
+            {
+                await Shell.Current.GoToAsync("//MainPage");
+            }
 
-            UsernameEntry.Text = string.Empty;
+            EmailEntry.Text = string.Empty;
             PasswordEntry.Text = string.Empty;
             PasswordEntry.IsPassword = true;
             _showPassword = false;
@@ -74,6 +157,11 @@ public partial class LoginPage : ContentPage
     private void SetBusy(bool busy)
     {
         LoginButton.IsEnabled = !busy;
+        EmailEntry.IsEnabled = !busy;
+        PasswordEntry.IsEnabled = !busy;
+        StudentRoleTab.IsEnabled = !busy;
+        AuthorRoleTab.IsEnabled = !busy;
+        BusyRow.IsVisible = busy;
         BusyIndicator.IsRunning = busy;
         BusyIndicator.IsVisible = busy;
         BusyText.IsVisible = busy;

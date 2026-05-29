@@ -63,10 +63,10 @@ public partial class BorrowPage : ContentPage
         }
 
         var userId = SessionHelper.CurrentUser.Id;
-        bool ok = await _borrowService.BorrowBookAsync(selected.Id, userId);
-        if (!ok)
+        var result = await _borrowService.BorrowBookAsync(selected.Id, userId);
+        if (!result.Success)
         {
-            ShowError("Ödünç alma başarısız. API çalışıyor mu?");
+            ShowError(result.ErrorMessage ?? "Ödünç alma başarısız.");
             return;
         }
 

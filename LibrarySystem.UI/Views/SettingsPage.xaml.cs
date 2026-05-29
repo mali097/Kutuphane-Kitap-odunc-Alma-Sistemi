@@ -15,8 +15,11 @@ public partial class SettingsPage : ContentPage
         var user = SessionHelper.CurrentUser;
         if (user == null) return;
 
-        UsernameLabel.Text = user.Username;
-        EmailLabel.Text = $"{user.Username}@email.com";
+        SessionHelper.NormalizeProfile(user);
+        UsernameLabel.Text = string.IsNullOrWhiteSpace(user.FullName)
+            ? SessionHelper.GetDisplayUsername(user)
+            : user.FullName.Trim();
+        EmailLabel.Text = string.IsNullOrWhiteSpace(user.Email) ? "—" : user.Email;
 
         ThemeHelper.ApplyBottomTab(
             TabSettingsBtn,
@@ -35,7 +38,10 @@ public partial class SettingsPage : ContentPage
     private async void Email_Tapped(object? sender, EventArgs e)
     {
         var user = SessionHelper.CurrentUser;
-        var email = user == null ? "—" : $"{user.Username}@email.com";
+        if (user != null)
+            SessionHelper.NormalizeProfile(user);
+
+        var email = user == null || string.IsNullOrWhiteSpace(user.Email) ? "—" : user.Email;
         await DisplayAlert("E-posta Adresi", email, "Tamam");
     }
 

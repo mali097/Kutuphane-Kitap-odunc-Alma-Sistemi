@@ -25,7 +25,10 @@ public class BorrowService : IBorrowService
             ApiClientHelper.ApplySessionHeaders(_httpClient);
             return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows") ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            return new();
+        }
     }
 
     public async Task<List<BorrowRecord>> GetUserBorrowsAsync(int userId)
@@ -45,7 +48,10 @@ public class BorrowService : IBorrowService
             ApiClientHelper.ApplySessionHeaders(_httpClient);
             return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/users/me/borrows") ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            return new();
+        }
     }
 
     public async Task<List<BorrowRecord>> GetMyActiveBorrowsAsync()
@@ -60,7 +66,10 @@ public class BorrowService : IBorrowService
             ApiClientHelper.ApplySessionHeaders(_httpClient);
             return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/users/me/borrows/active") ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            return new();
+        }
     }
 
     public async Task<List<BorrowRecord>> GetOverdueBorrowsAsync()
@@ -75,30 +84,52 @@ public class BorrowService : IBorrowService
             ApiClientHelper.ApplySessionHeaders(_httpClient);
             return await _httpClient.GetFromJsonAsync<List<BorrowRecord>>("/api/borrows/overdue") ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            return new();
+        }
     }
 
-    public async Task<bool> BorrowBookAsync(int bookId, int userId)
+    public async Task<ApiOperationResult> BorrowBookAsync(int bookId, int userId)
     {
         var currentUser = SessionHelper.CurrentUser;
         if (currentUser is null)
         {
-            return false;
+            return ApiOperationResult.Fail("Giriş yapmanız gerekiyor.");
         }
 
         if (!SessionHelper.IsAdmin && currentUser.Id != userId)
         {
-            return false;
+            return ApiOperationResult.Fail("Bu işlem için yetkiniz yok.");
         }
 
         try
         {
             ApiClientHelper.ApplySessionHeaders(_httpClient);
-            var response = await _httpClient.PostAsJsonAsync("/api/borrows",
-                new { BookId = bookId, UserId = currentUser.Id });
-            return response.IsSuccessStatusCode;
+            var response = await _httpClient.PostAsJsonAsync("/api/borrows", new
+            {
+                bookId,
+                userId = currentUser.Id
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiOperationResult.Ok();
+            }
+
+            var message = await ApiResponseHelper.ReadErrorMessageAsync(
+                response,
+                "Ödünç alma başarısız. Kitap müsait olmayabilir veya veritabanında bulunmuyor olabilir.");
+            return ApiOperationResult.Fail(message);
         }
-        catch { return false; }
+        catch (HttpRequestException)
+        {
+            return ApiOperationResult.Fail("API'ye bağlanılamadı. LibrarySystem.Api çalışıyor mu?");
+        }
+        catch
+        {
+            return ApiOperationResult.Fail("Ödünç alma sırasında bağlantı hatası oluştu.");
+        }
     }
 
     public async Task<bool> ReturnBookAsync(int borrowId)
@@ -109,6 +140,9 @@ public class BorrowService : IBorrowService
             var response = await _httpClient.PutAsync($"/api/borrows/return/{borrowId}", null);
             return response.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 }

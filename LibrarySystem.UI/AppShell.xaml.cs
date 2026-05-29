@@ -20,10 +20,12 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(UserPanelPage), typeof(UserPanelPage));
         Routing.RegisterRoute(nameof(BookDetailPage), typeof(BookDetailPage));
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
+        Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
         Routing.RegisterRoute(nameof(AdminPage), typeof(AdminPage));
         Routing.RegisterRoute(nameof(ChangePasswordPage), typeof(ChangePasswordPage));
         Routing.RegisterRoute(nameof(BorrowPage), typeof(BorrowPage));
         Routing.RegisterRoute(nameof(AddEditBookPage), typeof(AddEditBookPage));
         Routing.RegisterRoute(nameof(SupportPage), typeof(SupportPage));
+        Routing.RegisterRoute(nameof(AddBookRecommendationPage), typeof(AddBookRecommendationPage));
     }
 }

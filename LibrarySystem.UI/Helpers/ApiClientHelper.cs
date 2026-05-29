@@ -13,7 +13,11 @@ public static class ApiClientHelper
 
     public static HttpClient CreateClient()
     {
-        var client = new HttpClient { BaseAddress = new Uri(GetBaseUrl()) };
+        var client = new HttpClient
+        {
+            BaseAddress = new Uri(GetBaseUrl()),
+            Timeout = TimeSpan.FromSeconds(30)
+        };
         ApplySessionHeaders(client);
         return client;
     }

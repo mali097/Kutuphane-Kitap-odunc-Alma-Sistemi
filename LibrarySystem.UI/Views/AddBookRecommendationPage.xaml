@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Views.AddBookRecommendationPage"
+             Title="Yeni Kitap Önerisi"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#141624">
+
+    <ContentPage.Resources>
+        <LinearGradientBrush x:Key="PageGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#1A1535" Offset="0.0" />
+            <GradientStop Color="#141624" Offset="0.45" />
+            <GradientStop Color="#0F1020" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="ShareButtonGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#7B4FD4" Offset="0.0" />
+            <GradientStop Color="#C44B7A" Offset="0.55" />
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <Style x:Key="FieldLabel" TargetType="Label">
+            <Setter Property="TextColor" Value="#B0A8C8" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="4,0,0,6" />
+        </Style>
+
+        <Style x:Key="InputBorder" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="#1F1E3A" />
+            <Setter Property="Stroke" Value="#3D2F66" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+            <Setter Property="Padding" Value="12,10" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid Background="{StaticResource PageGradient}">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,52,18,24" Spacing="20">
+
+                <Button Text="←"
+                        FontSize="22"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        HorizontalOptions="Start"
+                        Padding="0"
+                        Clicked="Back_Clicked" />
+
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Yeni Kitap Önerisi Ekle"
+                           TextColor="White"
+                           FontSize="22"
+                           FontAttributes="Bold" />
+                    <Label Text="Önerdiğiniz kitap ve bu kitap hakkındaki düşüncelerinizi paylaşın."
+                           TextColor="#9A92B8"
+                           FontSize="13"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Kitap Adı" Style="{StaticResource FieldLabel}" />
+                    <Border Style="{StaticResource InputBorder}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Label Text="📖"
+                                   FontSize="16"
+                                   VerticalOptions="Center"
+                                   TextColor="#8772D6" />
+                            <Entry x:Name="BookTitleEntry"
+                                   Grid.Column="1"
+                                   Placeholder="Örnek: Suç ve Ceza"
+                                   PlaceholderColor="#6B6578"
+                                   TextColor="White"
+                                   BackgroundColor="Transparent"
+                                   TextChanged="Form_TextChanged" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Düşünceleriniz" Style="{StaticResource FieldLabel}" />
+                    <Border Style="{StaticResource InputBorder}" Padding="12,12,12,8">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                            <Label Text="“"
+                                   FontSize="22"
+                                   TextColor="#8772D6"
+                                   VerticalOptions="Start" />
+                            <Grid Grid.Row="1" RowDefinitions="*,Auto">
+                                <Editor x:Name="ThoughtsEditor"
+                                        Grid.Row="0"
+                                        Placeholder="Bu kitap hakkında düşüncelerinizi kısaca paylaşın..."
+                                        PlaceholderColor="#6B6578"
+                                        TextColor="White"
+                                        BackgroundColor="Transparent"
+                                        AutoSize="TextChanges"
+                                        MaxLength="500"
+                                        MinimumHeightRequest="120"
+                                        TextChanged="Thoughts_TextChanged" />
+                                <Label x:Name="CharCountLabel"
+                                       Grid.Row="1"
+                                       Text="0 / 500"
+                                       TextColor="#7C75A0"
+                                       FontSize="11"
+                                       HorizontalOptions="End"
+                                       Margin="0,4,0,0" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <Border BackgroundColor="#2B2348"
+                        Stroke="#3D2F66"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border WidthRequest="28"
+                                HeightRequest="28"
+                                BackgroundColor="#3A2E66"
+                                StrokeShape="RoundRectangle 14"
+                                VerticalOptions="Start">
+                            <Label Text="i"
+                                   TextColor="#B0A8C8"
+                                   FontAttributes="Bold"
+                                   FontSize="14"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="İpucu"
+                                   TextColor="White"
+                                   FontAttributes="Bold"
+                                   FontSize="14" />
+                            <Label Text="Düşüncelerinizi paylaşırken kitabın size kattıklarından, etkileyici yönlerinden ve neden okurların ilgisini çekebileceğinden bahsedebilirsiniz."
+                                   TextColor="#9A92B8"
+                                   FontSize="12"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Label x:Name="ErrorLabel"
+                       Text=""
+                       TextColor="#FF8A80"
+                       FontSize="12"
+                       IsVisible="False" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                    <Button Text="İptal"
+                            Grid.Column="0"
+                            TextColor="White"
+                            BackgroundColor="Transparent"
+                            BorderColor="#FFFFFF55"
+                            BorderWidth="1"
+                            CornerRadius="14"
+                            Padding="14,12"
+                            Clicked="Cancel_Clicked" />
+                    <Border Grid.Column="1"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 14"
+                            Background="{StaticResource ShareButtonGradient}">
+                        <Button x:Name="ShareButton"
+                                Text="Paylaş"
+                                TextColor="White"
+                                FontAttributes="Bold"
+                                BackgroundColor="Transparent"
+                                CornerRadius="14"
+                                Padding="14,12"
+                                IsEnabled="False"
+                                Opacity="0.55"
+                                Clicked="Share_Clicked" />
+                    </Border>
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <ActivityIndicator x:Name="BusyIndicator"
+                           IsRunning="False"
+                           IsVisible="False"
+                           Color="White"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

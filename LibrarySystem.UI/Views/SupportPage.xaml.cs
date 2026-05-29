@@ -58,8 +58,8 @@ public partial class SupportPage : ContentPage
             [
                 new()
                 {
-                    Question = "Yazar girişi ile Kullanıcı girişi arasındaki fark nedir?",
-                    Answer = "Yazar girişi içerik üretmek ve yönetmek içindir. Kullanıcı girişi ise kütüphaneyi keşfetmek ve ödünç almak içindir."
+                    Question = "Yazar girişi ile Öğrenci girişi arasındaki fark nedir?",
+                    Answer = "Yazar girişi içerik üretmek ve öneri paylaşmak içindir. Öğrenci girişi ise kütüphaneyi keşfetmek ve ödünç almak içindir."
                 },
                 new()
                 {
@@ -102,7 +102,7 @@ public partial class SupportPage : ContentPage
     {
         var card = new Border
         {
-            Style = (Style)Resources["CreamCard"],
+            Style = (Style)Application.Current!.Resources["ThemedCard"],
             Padding = new Thickness(14, 12)
         };
 
@@ -118,7 +118,7 @@ public partial class SupportPage : ContentPage
             Text = category.Title,
             FontAttributes = FontAttributes.Bold,
             FontSize = 15,
-            TextColor = Color.FromArgb("#1B1530"),
+            TextColor = ThemeHelper.GetColor("TextPrimaryColor"),
             LineBreakMode = LineBreakMode.TailTruncation
         };
 
@@ -126,7 +126,7 @@ public partial class SupportPage : ContentPage
         {
             Text = category.Subtitle,
             FontSize = 12,
-            TextColor = Color.FromArgb("#6B6578"),
+            TextColor = ThemeHelper.GetColor("TextSecondaryColor"),
             LineBreakMode = LineBreakMode.WordWrap
         };
 
@@ -140,7 +140,7 @@ public partial class SupportPage : ContentPage
         {
             Text = "›",
             FontSize = 22,
-            TextColor = Color.FromArgb("#C5C0D8"),
+            TextColor = ThemeHelper.GetColor("AccentChevronColor"),
             VerticalOptions = LayoutOptions.Center
         };
 
@@ -208,7 +208,7 @@ public partial class SupportPage : ContentPage
         {
             Text = "›",
             FontSize = 20,
-            TextColor = Color.FromArgb("#4A154B"),
+            TextColor = ThemeHelper.GetColor("AccentPurpleColor"),
             VerticalOptions = LayoutOptions.Center,
             HorizontalOptions = LayoutOptions.End
         };
@@ -216,7 +216,7 @@ public partial class SupportPage : ContentPage
         var questionLabel = new Label
         {
             Text = item.Question,
-            TextColor = Color.FromArgb("#1B1530"),
+            TextColor = ThemeHelper.GetColor("TextPrimaryColor"),
             FontSize = 14,
             FontAttributes = FontAttributes.Bold,
             LineBreakMode = LineBreakMode.WordWrap,
@@ -239,7 +239,7 @@ public partial class SupportPage : ContentPage
         var answerLabel = new Label
         {
             Text = item.Answer,
-            TextColor = Color.FromArgb("#6B6578"),
+            TextColor = ThemeHelper.GetColor("TextSecondaryColor"),
             FontSize = 13,
             LineBreakMode = LineBreakMode.WordWrap,
             Margin = new Thickness(14, 0, 14, 14),
@@ -251,7 +251,7 @@ public partial class SupportPage : ContentPage
 
         var card = new Border
         {
-            Style = (Style)Resources["CreamCard"],
+            Style = (Style)Application.Current!.Resources["ThemedCard"],
             Content = new VerticalStackLayout
             {
                 Spacing = 0,

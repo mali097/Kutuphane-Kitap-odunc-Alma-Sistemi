@@ -73,6 +73,8 @@ public partial class BookDetailPage : ContentPage
         }
         else
         {
+            AdminButtons.IsVisible = false;
+            BorrowBtn.IsVisible = true;
             BorrowBtn.IsEnabled = _book.IsAvailable;
             BorrowBtn.BackgroundColor = _book.IsAvailable
                 ? Color.FromArgb("#FF6F00")
@@ -124,13 +126,25 @@ public partial class BookDetailPage : ContentPage
         var userId = SessionHelper.CurrentUser.Id;
         if (_book.IsFavorite)
         {
-            await _bookService.RemoveFavoriteAsync(userId, _book.Id);
+            var removed = await _bookService.RemoveFavoriteAsync(userId, _book.Id);
+            if (!removed)
+            {
+                await DisplayAlert("Hata", "Favorilerden çıkarılamadı.", "Tamam");
+                return;
+            }
+
             _book.IsFavorite = false;
             await DisplayAlert("Favoriler", "Kitap favorilerden çıkarıldı.", "Tamam");
         }
         else
         {
-            await _bookService.AddFavoriteAsync(userId, _book.Id);
+            var added = await _bookService.AddFavoriteAsync(userId, _book.Id);
+            if (!added)
+            {
+                await DisplayAlert("Hata", "Favorilere eklenemedi. API çalışıyor mu kontrol edin.", "Tamam");
+                return;
+            }
+
             _book.IsFavorite = true;
             await DisplayAlert("Favoriler", "Kitap favorilere eklendi.", "Tamam");
         }

@@ -41,6 +41,7 @@ public class BookService : IBookService
     {
         try
         {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
             var apiBooks = await _httpClient.GetFromJsonAsync<List<ApiBookDto>>(url);
             if (apiBooks is { Count: > 0 })
             {
@@ -54,7 +55,11 @@ public class BookService : IBookService
         }
         catch
         {
-            // API erişilemiyorsa yerel liste kullanılır
+            // Giriş yapılmışsa demo kitap gösterme (ödünç/favori hatalarını önler)
+            if (SessionHelper.CurrentUser is not null)
+            {
+                return new();
+            }
         }
 
         return GetLocalFallbackBooks();
@@ -64,14 +69,67 @@ public class BookService : IBookService
 
     public Task<bool> UpdateBookAsync(Book book) => Task.FromResult(true);
 
-    public Task<List<FavoriteBook>> GetFavoritesAsync(int userId)
-        => Task.FromResult(new List<FavoriteBook>());
+    public async Task<List<FavoriteBook>> GetFavoritesAsync(int userId)
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.CurrentUser.Id != userId)
+        {
+            return new();
+        }
 
-    public Task<bool> AddFavoriteAsync(int userId, int bookId)
-        => Task.FromResult(true);
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var items = await _httpClient.GetFromJsonAsync<List<ApiFavoriteDto>>("/api/users/me/favorites");
+            if (items is null || items.Count == 0)
+            {
+                return new();
+            }
 
-    public Task<bool> RemoveFavoriteAsync(int userId, int bookId)
-        => Task.FromResult(true);
+            return items.Select(MapFavorite).ToList();
+        }
+        catch
+        {
+            return new();
+        }
+    }
+
+    public async Task<bool> AddFavoriteAsync(int userId, int bookId)
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.CurrentUser.Id != userId)
+        {
+            return false;
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var response = await _httpClient.PostAsync($"/api/users/me/favorites/{bookId}", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> RemoveFavoriteAsync(int userId, int bookId)
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.CurrentUser.Id != userId)
+        {
+            return false;
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var response = await _httpClient.DeleteAsync($"/api/users/me/favorites/{bookId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public Task<bool> DeleteBookAsync(int bookId)
         => Task.FromResult(true);
@@ -100,6 +158,42 @@ public class BookService : IBookService
         new() { Id = 4, Title = "Simyacı", Author = "Paulo Coelho", ISBN = "9789750719503", Category = "Kişisel Gelişim", PublishYear = 1988, PageCount = 184, Publisher = "Can Yayınları", Description = "Kişisel efsane ve kader üzerine sembolik bir yolculuk.", IsAvailable = true },
         new() { Id = 5, Title = "Kara Kitap", Author = "Orhan Pamuk", ISBN = "9789750719121", Category = "Polisiye", PublishYear = 1990, PageCount = 448, Publisher = "İletişim", Description = "İstanbul'da geçen gizemli ve katmanlı bir polisiye.", IsAvailable = true }
     ];
+
+    private static FavoriteBook MapFavorite(ApiFavoriteDto dto) => new()
+    {
+        BookId = dto.BookId,
+        UserId = SessionHelper.CurrentUser?.Id ?? 0,
+        BookTitle = dto.Title ?? string.Empty,
+        BookAuthor = dto.Author ?? string.Empty,
+        BookCategory = dto.Genres is { Count: > 0 } ? string.Join(", ", dto.Genres) : string.Empty,
+        BookPublisher = dto.Publisher ?? string.Empty,
+        BookPageCount = dto.PageCount,
+        AddedAt = dto.FavoritedAt
+    };
+
+    private sealed class ApiFavoriteDto
+    {
+        [JsonPropertyName("bookId")]
+        public int BookId { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("author")]
+        public string? Author { get; set; }
+
+        [JsonPropertyName("genres")]
+        public List<string>? Genres { get; set; }
+
+        [JsonPropertyName("publisher")]
+        public string? Publisher { get; set; }
+
+        [JsonPropertyName("pageCount")]
+        public int PageCount { get; set; }
+
+        [JsonPropertyName("favoritedAt")]
+        public DateTime FavoritedAt { get; set; }
+    }
 
     private sealed class ApiBookDto
     {

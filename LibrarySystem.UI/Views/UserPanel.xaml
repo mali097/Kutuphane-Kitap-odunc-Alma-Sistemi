@@ -46,6 +46,10 @@
                            TextColor="#E8E0FF"
                            FontSize="14"
                            Opacity="0.95" />
+                    <Label x:Name="EmailLabel"
+                           TextColor="#D8D0F0"
+                           FontSize="13"
+                           Opacity="0.9" />
                     <Border BackgroundColor="#FFFFFF33"
                             StrokeShape="RoundRectangle 20"
                             Padding="10,4"

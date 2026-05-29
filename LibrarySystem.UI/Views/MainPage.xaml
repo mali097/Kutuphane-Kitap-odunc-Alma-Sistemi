@@ -20,7 +20,7 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Geniş arama; menü ve arama içi filtre yok -->
+        <!-- Geniş arama -->
         <Grid Grid.Row="0" Padding="14,14,14,10" Background="{StaticResource HeaderGradient}"
               ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="12">
 
@@ -80,7 +80,7 @@
                         Padding="14"
                         MinimumHeightRequest="280">
                     <VerticalStackLayout Spacing="12">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
                             <Border WidthRequest="36" HeightRequest="36"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}"
                                     StrokeShape="RoundRectangle 12">
@@ -95,6 +95,20 @@
                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                        FontSize="12" />
                             </VerticalStackLayout>
+                            <Button x:Name="AddRecommendationButton"
+                                    Grid.Column="2"
+                                    Text="+"
+                                    FontSize="22"
+                                    FontAttributes="Bold"
+                                    TextColor="White"
+                                    WidthRequest="40"
+                                    HeightRequest="40"
+                                    Padding="0"
+                                    CornerRadius="20"
+                                    IsVisible="False"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}"
+                                    VerticalOptions="Center"
+                                    Clicked="AddRecommendation_Clicked" />
                         </Grid>
 
                         <CollectionView x:Name="QuotesCollection"
@@ -117,11 +131,16 @@
                                                    FontAttributes="Bold"
                                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                                    Margin="10,0,0,0"/>
-                                            <Label Grid.Row="1" Grid.Column="1"
-                                                   Text="{Binding Text}"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
-                                                   FontSize="12"
-                                                   Margin="10,4,0,0"/>
+                                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4" Margin="10,4,0,0">
+                                                <Label Text="{Binding BookTitle}"
+                                                       FontAttributes="Bold"
+                                                       FontSize="12"
+                                                       TextColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}" />
+                                                <Label Text="{Binding Text}"
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
+                                                       FontSize="12"
+                                                       LineBreakMode="WordWrap" />
+                                            </VerticalStackLayout>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -130,7 +149,8 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border Style="{StaticResource ThemedCardAlt}"
+                <Border x:Name="PopularBooksSection"
+                        Style="{StaticResource ThemedCardAlt}"
                         StrokeShape="RoundRectangle 20"
                         Padding="14"
                         MinimumHeightRequest="280">
@@ -296,7 +316,7 @@
                                         ItemsLayout="VerticalList">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BackgroundColor="#00000022"
+                                    <Border BackgroundColor="#0000022"
                                             Stroke="#FFFFFF14"
                                             StrokeShape="RoundRectangle 14"
                                             Padding="10"
@@ -335,7 +355,7 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- Kategoriler sekmesi (fotoğraftaki 2 sütunlu grid) -->
+        <!-- Kategoriler sekmesi -->
         <ScrollView x:Name="CategoriesPanel"
                     Grid.Row="1"
                     IsVisible="False"

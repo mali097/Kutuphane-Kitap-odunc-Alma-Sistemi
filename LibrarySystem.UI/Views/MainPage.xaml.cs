@@ -8,6 +8,7 @@ public partial class MainPage : ContentPage
 {
     private readonly IBookService _bookService;
     private readonly IBorrowService _borrowService;
+    private readonly IRecommendationService _recommendationService;
     private List<Book> _allBooks = new();
     private List<BookCategoryItem> _categories = new();
     private CancellationTokenSource? _searchDebounceCts;
@@ -17,14 +18,8 @@ public partial class MainPage : ContentPage
         InitializeComponent();
         _bookService = new BookService();
         _borrowService = new BorrowService();
+        _recommendationService = new RecommendationService();
         _categories = BookCategories.CreateListWithCounts(Enumerable.Empty<Book>(), useDemoCountsWhenEmpty: true);
-
-        QuotesCollection.ItemsSource = new List<QuoteCard>
-        {
-            new("Orhan Pamuk", "Okumak, hayatta kalmaktır.\nKitaplar bizi biz yapan kapılardır."),
-            new("Elif Şafak", "Bir kitap, bir insanı değiştirir;\nbazen de bir hayatı."),
-            new("Ahmet Ümit", "Her kitap yeni bir maceradır.\nOkudukça çoğalırız.")
-        };
 
         PopularCollection.ItemsSource = new List<PopularBookCard>
         {
@@ -39,10 +34,20 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        if (SessionHelper.CurrentUser is null)
+        {
+            await Shell.Current.GoToAsync("//LoginPage");
+            return;
+        }
+
         var user = SessionHelper.CurrentUser;
-        ProfileUsernameLabel.Text = user?.Username ?? "Profil";
+        ProfileUsernameLabel.Text = GetProfileDisplayName(user);
         CategoryFilterState.SelectedCategoryId = null;
         UpdateWelcomeMessage();
+        ApplyRoleBasedUi();
+        UpdateAuthorRecommendationUi();
+        await LoadAuthorRecommendationsAsync();
         await LoadBooksAsync();
         await LoadActiveBorrowsAsync();
         await LoadCategoriesAsync();
@@ -73,7 +78,26 @@ public partial class MainPage : ContentPage
     private void UpdateWelcomeMessage()
     {
         var user = SessionHelper.CurrentUser;
-        WelcomeLabel.Text = $"👋 Hoş geldin, {user?.Username ?? "Kullanıcı"}!";
+        if (SessionHelper.IsAuthor)
+        {
+            var name = string.IsNullOrWhiteSpace(user?.FullName) ? user?.Username : user?.FullName;
+            WelcomeLabel.Text = $"✍️ Hoş geldin, Yazar {name ?? "Kullanıcı"}!";
+            return;
+        }
+
+        WelcomeLabel.Text = $"👋 Hoş geldin, {GetProfileDisplayName(user)}!";
+    }
+
+    private static string GetProfileDisplayName(Models.User? user)
+    {
+        if (user is null) return "Kullanıcı";
+        if (!string.IsNullOrWhiteSpace(user.FullName)) return user.FullName;
+        return SessionHelper.GetDisplayUsername(user);
+    }
+
+    private void ApplyRoleBasedUi()
+    {
+        // Yazarlar da öğrenci gibi tüm ana sayfa bölümlerini görür; ekstra sadece öneri ekleme (+).
     }
 
     private void ShowHomeTab()
@@ -81,6 +105,7 @@ public partial class MainPage : ContentPage
         HomePanel.IsVisible = true;
         CategoriesPanel.IsVisible = false;
         UpdateWelcomeMessage();
+        UpdateAuthorRecommendationUi();
         ThemeHelper.ApplyBottomTab(
             TabHomeBtn,
             TabCategoriesBtn, TabFavoritesBtn, TabNotificationsBtn, TabSettingsBtn);
@@ -185,10 +210,17 @@ public partial class MainPage : ContentPage
             if (SessionHelper.CurrentUser == null) return;
             int userId = SessionHelper.CurrentUser.Id;
 
+            bool success;
             if (book.IsFavorite)
-                await _bookService.RemoveFavoriteAsync(userId, book.Id);
+                success = await _bookService.RemoveFavoriteAsync(userId, book.Id);
             else
-                await _bookService.AddFavoriteAsync(userId, book.Id);
+                success = await _bookService.AddFavoriteAsync(userId, book.Id);
+
+            if (!success)
+            {
+                await DisplayAlert("Hata", "Favori işlemi başarısız. API çalışıyor mu ve kitap veritabanında var mı kontrol edin.", "Tamam");
+                return;
+            }
 
             book.IsFavorite = !book.IsFavorite;
             var temp = BooksCollectionView.ItemsSource;
@@ -220,7 +252,7 @@ public partial class MainPage : ContentPage
         if (ok)
         {
             SessionHelper.CurrentUser = null;
-            await Shell.Current.GoToAsync(nameof(LoginPage));
+            await Shell.Current.GoToAsync("//LoginPage");
         }
     }
 
@@ -236,6 +268,41 @@ public partial class MainPage : ContentPage
     private void TabHome_Clicked(object sender, EventArgs e)
         => ShowHomeTab();
 
-    private sealed record QuoteCard(string Author, string Text);
+    private void UpdateAuthorRecommendationUi()
+    {
+        AddRecommendationButton.IsVisible = SessionHelper.IsAuthor && !SessionHelper.IsAdmin;
+    }
+
+    private async Task LoadAuthorRecommendationsAsync()
+    {
+        var recommendations = await _recommendationService.GetWeeklyRecommendationsAsync();
+        var cards = recommendations.Count > 0
+            ? recommendations.Select(item => new QuoteCard(
+                item.AuthorName,
+                item.BookTitle,
+                item.Idea)).ToList()
+            : GetFallbackQuoteCards();
+
+        QuotesCollection.ItemsSource = cards;
+    }
+
+    private static List<QuoteCard> GetFallbackQuoteCards() => new()
+    {
+        new("Orhan Pamuk", "Kara Kitap", "Okumak, hayatta kalmaktır. Kitaplar bizi biz yapan kapılardır."),
+        new("Elif Şafak", "Aşk", "Bir kitap, bir insanı değiştirir; bazen de bir hayatı."),
+        new("Ahmet Ümit", "İstanbul Hatırası", "Her kitap yeni bir maceradır. Okudukça çoğalırız.")
+    };
+
+    private async void AddRecommendation_Clicked(object sender, EventArgs e)
+    {
+        if (!SessionHelper.IsAuthor)
+        {
+            return;
+        }
+
+        await Navigation.PushAsync(new AddBookRecommendationPage());
+    }
+
+    private sealed record QuoteCard(string Author, string BookTitle, string Text);
     private sealed record PopularBookCard(int Rank, string Title, string Author, string Rating, string RowColor);
 }

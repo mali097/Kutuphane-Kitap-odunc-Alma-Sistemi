@@ -97,7 +97,13 @@ public partial class CategoryDetailPage : ContentPage
             return;
         }
 
-        await _bookService.AddFavoriteAsync(SessionHelper.CurrentUser.Id, book.Id);
+        var added = await _bookService.AddFavoriteAsync(SessionHelper.CurrentUser.Id, book.Id);
+        if (!added)
+        {
+            await DisplayAlert("Hata", "Favorilere eklenemedi.", "Tamam");
+            return;
+        }
+
         await DisplayAlert("Favoriler", "Kitap favorilere eklendi.", "Tamam");
     }
 

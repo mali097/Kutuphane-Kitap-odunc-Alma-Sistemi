@@ -53,6 +53,6 @@ public partial class AdminPage : ContentPage
     private async void Logout_Clicked(object sender, EventArgs e)
     {
         SessionHelper.CurrentUser = null;
-        await Shell.Current.GoToAsync(nameof(LoginPage));
+        await Shell.Current.GoToAsync("//LoginPage");
     }
 }

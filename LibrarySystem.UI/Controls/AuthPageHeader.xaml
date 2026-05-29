@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LibrarySystem.UI.Controls.AuthPageHeader"
+             x:Name="Root">
+
+    <ContentView.Resources>
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#3D2A7A" Offset="0.0" />
+            <GradientStop Color="#8E3D7A" Offset="0.5" />
+            <GradientStop Color="#E88B3A" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentView.Resources>
+
+    <Grid Background="{StaticResource HeaderGradient}"
+          HeightRequest="248"
+          Padding="20,44,16,20"
+          RowDefinitions="Auto,*">
+
+        <Button x:Name="BackButton"
+                Grid.Row="0"
+                Text="←"
+                FontSize="22"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                HorizontalOptions="Start"
+                Padding="0"
+                Margin="0,0,0,0"
+                IsVisible="False"
+                Clicked="BackButton_Clicked" />
+
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,Auto"
+              ColumnSpacing="8"
+              VerticalOptions="Fill">
+            <VerticalStackLayout Spacing="6"
+                                 VerticalOptions="Center"
+                                 Padding="0,0,4,0">
+                <Label x:Name="TitleLabel"
+                       Text="Giriş Yap"
+                       TextColor="White"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       LineBreakMode="NoWrap" />
+                <Label x:Name="SubtitleLabel"
+                       Text=""
+                       TextColor="#EDE8FF"
+                       FontSize="12"
+                       LineBreakMode="WordWrap"
+                       MaxLines="3"
+                       Opacity="0.95" />
+            </VerticalStackLayout>
+
+            <Grid x:Name="LoginBooksIllustration"
+                  Grid.Column="1"
+                  WidthRequest="108"
+                  HeightRequest="112"
+                  VerticalOptions="Center"
+                  HorizontalOptions="End"
+                  IsVisible="True">
+                <Border WidthRequest="28"
+                        HeightRequest="78"
+                        BackgroundColor="#9A6B42"
+                        Stroke="#FFFFFF40"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 5"
+                        Rotation="-10"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"
+                        Margin="0,0,68,0" />
+                <Border WidthRequest="28"
+                        HeightRequest="84"
+                        BackgroundColor="#2EA77E"
+                        Stroke="#FFFFFF40"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 5"
+                        Rotation="-4"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"
+                        Margin="0,0,46,0" />
+                <Border WidthRequest="28"
+                        HeightRequest="90"
+                        BackgroundColor="#C94B4B"
+                        Stroke="#FFFFFF40"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 5"
+                        Rotation="3"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"
+                        Margin="0,0,24,0" />
+                <Border WidthRequest="30"
+                        HeightRequest="96"
+                        BackgroundColor="#3B6FD9"
+                        Stroke="#FFFFFF50"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 5"
+                        Rotation="9"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <Grid x:Name="RegisterBookIllustration"
+                  Grid.Column="1"
+                  WidthRequest="96"
+                  HeightRequest="112"
+                  VerticalOptions="Center"
+                  HorizontalOptions="End"
+                  IsVisible="False">
+                <Border WidthRequest="64"
+                        HeightRequest="88"
+                        BackgroundColor="#6B46C1"
+                        Stroke="#FFFFFF55"
+                        StrokeThickness="2"
+                        StrokeShape="RoundRectangle 10"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        Rotation="6"
+                        Padding="0,12,0,0">
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Border WidthRequest="32"
+                                HeightRequest="32"
+                                BackgroundColor="#FFFFFF35"
+                                StrokeShape="RoundRectangle 16">
+                            <Label Text="👤"
+                                   FontSize="18"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <BoxView HeightRequest="3" WidthRequest="36" Color="#FFFFFF44" CornerRadius="2" />
+                        <BoxView HeightRequest="3" WidthRequest="28" Color="#FFFFFF33" CornerRadius="2" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</ContentView>
