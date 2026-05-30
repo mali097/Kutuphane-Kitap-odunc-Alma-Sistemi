@@ -153,6 +153,10 @@ public partial class MainPage : ContentPage
     private void ApplyBookFilter()
     {
         BooksCollectionView.ItemsSource = _allBooks.ToList();
+        BooksEmptyHintLabel.IsVisible = _allBooks.Count == 0;
+        BooksEmptyHintLabel.Text = _allBooks.Count == 0 && !string.IsNullOrWhiteSpace(BookService.LastFetchError)
+            ? $"Kitaplar yüklenemedi. API çalışıyor mu? ({BookService.LastFetchError})"
+            : "📭 Kitap bulunamadı.";
     }
 
     private async void SearchBar_TextChanged(object sender, TextChangedEventArgs e)

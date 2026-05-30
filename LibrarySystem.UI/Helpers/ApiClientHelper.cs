@@ -5,15 +5,23 @@ public static class ApiClientHelper
     public static string GetBaseUrl()
     {
 #if ANDROID
-    return "http://10.0.2.2:5279"; 
+        return "http://10.0.2.2:5279";
 #else
-        return "https://localhost:7134"; 
+        return "http://127.0.0.1:5279";
 #endif
     }
 
+    public static string GetBookCoverUrl(int bookId)
+        => $"{GetBaseUrl()}/books/{bookId}/cover";
+
     public static HttpClient CreateClient()
     {
-        var client = new HttpClient
+        var handler = new HttpClientHandler();
+#if DEBUG
+        handler.ServerCertificateCustomValidationCallback = static (_, _, _, _) => true;
+#endif
+
+        var client = new HttpClient(handler)
         {
             BaseAddress = new Uri(GetBaseUrl()),
             Timeout = TimeSpan.FromSeconds(30)

@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using LibrarySystem.UI.Helpers;
 using LibrarySystem.UI.Models;
@@ -7,6 +8,11 @@ namespace LibrarySystem.UI.Services;
 
 public class BookService : IBookService
 {
+    private static readonly JsonSerializerOptions ApiJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly HttpClient _httpClient;
 
     public BookService()
@@ -42,20 +48,21 @@ public class BookService : IBookService
         try
         {
             ApiClientHelper.ApplySessionHeaders(_httpClient);
-            var apiBooks = await _httpClient.GetFromJsonAsync<List<ApiBookDto>>(url);
-            if (apiBooks is { Count: > 0 })
+            using var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
             {
-                return apiBooks.Select(MapFromApi).ToList();
+                LastFetchError = $"API yanıtı: {(int)response.StatusCode}";
+                return SessionHelper.CurrentUser is not null ? new() : GetLocalFallbackBooks();
             }
 
-            if (apiBooks is not null)
-            {
-                return new();
-            }
+            var json = await response.Content.ReadAsStringAsync();
+            var apiBooks = JsonSerializer.Deserialize<List<ApiBookDto>>(json, ApiJsonOptions);
+            LastFetchError = null;
+            return apiBooks?.Select(MapFromApi).ToList() ?? new();
         }
-        catch
+        catch (Exception ex)
         {
-            // Giriş yapılmışsa demo kitap gösterme (ödünç/favori hatalarını önler)
+            LastFetchError = ex.Message;
             if (SessionHelper.CurrentUser is not null)
             {
                 return new();
@@ -64,6 +71,8 @@ public class BookService : IBookService
 
         return GetLocalFallbackBooks();
     }
+
+    public static string? LastFetchError { get; private set; }
 
     public Task<bool> AddBookAsync(Book book) => Task.FromResult(true);
 
@@ -147,6 +156,7 @@ public class BookService : IBookService
         PageCount = dto.PageCount,
         Publisher = dto.Publisher ?? "",
         Description = dto.Description ?? "",
+        CoverImageUrl = ApiClientHelper.GetBookCoverUrl(dto.Id),
         IsAvailable = dto.IsAvailable
     };
 
@@ -209,8 +219,7 @@ public class BookService : IBookService
         public string? Publisher { get; set; }
         public string? Description { get; set; }
         public bool IsAvailable { get; set; } = true;
-
-        [JsonPropertyName("pageCount")]
-        public int PageCountAlt { set => PageCount = value; }
+        public decimal? AverageRating { get; set; }
+        public int RatingCount { get; set; }
     }
 }

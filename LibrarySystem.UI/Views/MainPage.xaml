@@ -309,6 +309,13 @@
                             <Label Grid.Column="3" Text="" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
                         </Grid>
 
+                        <Label x:Name="BooksEmptyHintLabel"
+                               IsVisible="False"
+                               Text="📭 Kitap bulunamadı."
+                               TextColor="#FFB4AB"
+                               FontSize="12"
+                               HorizontalTextAlignment="Center" />
+
                         <CollectionView x:Name="BooksCollectionView"
                                         SelectionMode="Single"
                                         SelectionChanged="Book_SelectionChanged"

@@ -39,6 +39,7 @@ public partial class BookDetailPage : ContentPage
 
         await RefreshFavoriteStateAsync();
         LoadBookData();
+        await LoadCoverImageAsync();
     }
 
     private void LoadBookData()
@@ -79,6 +80,38 @@ public partial class BookDetailPage : ContentPage
             BorrowBtn.BackgroundColor = _book.IsAvailable
                 ? Color.FromArgb("#FF6F00")
                 : Colors.Gray;
+        }
+    }
+
+    private async Task LoadCoverImageAsync()
+    {
+        CoverPlaceholderLabel.IsVisible = true;
+        CoverImage.IsVisible = false;
+        CoverImage.Source = null;
+
+        if (_book.Id <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            using var client = ApiClientHelper.CreateClient();
+            using var response = await client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Head, $"/books/{_book.Id}/cover"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            CoverImage.Source = ImageSource.FromUri(new Uri(ApiClientHelper.GetBookCoverUrl(_book.Id)));
+            CoverImage.IsVisible = true;
+            CoverPlaceholderLabel.IsVisible = false;
+        }
+        catch
+        {
+            // Kapak yoksa emoji placeholder kalır.
         }
     }
 

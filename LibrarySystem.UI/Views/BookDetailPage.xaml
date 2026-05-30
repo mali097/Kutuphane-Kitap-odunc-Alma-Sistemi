@@ -45,11 +45,17 @@
                             BackgroundColor="#2B1B4F"
                             Stroke="#FFFFFF33"
                             StrokeShape="RoundRectangle 14">
-                        <Label Text="📕"
-                               FontSize="48"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               TextColor="White" />
+                        <Grid>
+                            <Label x:Name="CoverPlaceholderLabel"
+                                   Text="📕"
+                                   FontSize="48"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"
+                                   TextColor="White" />
+                            <Image x:Name="CoverImage"
+                                   Aspect="AspectFill"
+                                   IsVisible="False" />
+                        </Grid>
                     </Border>
                     <VerticalStackLayout Spacing="8" VerticalOptions="Center">
                         <Label x:Name="TitleLabel"

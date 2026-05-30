@@ -5,7 +5,6 @@ using LibrarySystem.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-const string ActorUserIdHeader = "X-Actor-User-Id";
 const string AdminSetupKeyHeader = "X-Admin-Setup-Key";
 const string AdminTokenHeader = "X-Admin-Token";
 const string AuthorTokenHeader = "X-Author-Token";
@@ -1010,18 +1009,6 @@ static async Task EnsureBookRatingsTableAsync(LibraryDbContext db)
             CREATE UNIQUE INDEX [IX_BookRatings_UserId_BookId] ON [BookRatings] ([UserId], [BookId]);
         END
         """);
-}
-
-static int GetActorUserId(HttpContext context)
-{
-    if (context.Request.Headers.TryGetValue(ActorUserIdHeader, out var values)
-        && int.TryParse(values.ToString(), out var parsedId)
-        && parsedId > 0)
-    {
-        return parsedId;
-    }
-
-    return 1;
 }
 
 static async Task<AdminAuthorizationResult> AuthorizeAdminAsync(

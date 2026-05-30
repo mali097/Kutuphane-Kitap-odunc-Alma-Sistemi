@@ -15,6 +15,7 @@ public class Book
 
     public string Publisher { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string CoverImageUrl { get; set; } = string.Empty;
 
     public bool IsAvailable { get; set; } = true;
     public bool IsFavorite { get; set; }
