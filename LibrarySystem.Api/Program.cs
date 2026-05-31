@@ -43,6 +43,7 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Applying EF migrations to database '{DatabaseName}'", databaseName);
         db.Database.Migrate();
         await EnsureBookRatingsTableAsync(db);
+        await BookCatalogSeeder.SeedAsync(db, logger);
         logger.LogInformation("Database migrations applied successfully.");
     }
     catch (Exception exception)
@@ -258,11 +259,12 @@ app.MapPost("/api/auth/logout", async (UserLogoutRequest request, IAuthService a
 app.MapPost("/api/auth/change-password", async (
     ChangePasswordRequest request,
     [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
     HttpContext httpContext,
     IAuthService authService,
     CancellationToken cancellationToken) =>
 {
-    var sessionToken = GetUserSessionToken(userToken, httpContext);
+    var sessionToken = GetStudentOrAuthorSessionToken(userToken, authorToken, httpContext);
     if (string.IsNullOrWhiteSpace(sessionToken))
     {
         return Results.Unauthorized();
@@ -355,6 +357,26 @@ app.MapGet("/api/users/me/ratings", async (
 
     var ratings = await bookRatingService.GetUserRatedBooksAsync(authorization.AdminUserId ?? 0, cancellationToken);
     return Results.Ok(ratings.Select(MapUserRatedBookToResponse));
+});
+
+app.MapGet("/api/users/me", async (
+    [FromHeader(Name = UserTokenHeader)] string? userToken,
+    [FromHeader(Name = AuthorTokenHeader)] string? authorToken,
+    HttpContext httpContext,
+    IAuthService authService,
+    IUserService userService,
+    CancellationToken cancellationToken) =>
+{
+    var authorization = await AuthorizeStudentOrAuthorAsync(userToken, authorToken, httpContext, authService, userService, cancellationToken);
+    if (!authorization.IsAuthorized)
+    {
+        return authorization.ErrorResult!;
+    }
+
+    var user = await userService.GetByIdAsync(authorization.AdminUserId ?? 0, cancellationToken);
+    return user is null
+        ? Results.NotFound(new { Message = "User not found." })
+        : Results.Ok(MapUserToResponse(user));
 });
 
 app.MapGet("/api/users/me/favorites", async (
@@ -1525,7 +1547,8 @@ static UserResponse MapUserToResponse(User user)
         user.FirstName,
         user.LastName,
         user.Email,
-        user.Role
+        user.Role,
+        user.CreatedDate
     );
 }
 
@@ -1680,7 +1703,8 @@ internal sealed record UserResponse(
     string FirstName,
     string LastName,
     string Email,
-    string Role
+    string Role,
+    DateTime CreatedDate
 );
 
 internal sealed record AdminBorrowRecordResponse(

@@ -20,6 +20,10 @@ public class Book
     public bool IsAvailable { get; set; } = true;
     public bool IsFavorite { get; set; }
 
+    public decimal? AverageRating { get; set; }
+    public int RatingCount { get; set; }
+    public decimal? MyRating { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public string CreatedBy { get; set; } = string.Empty;
 

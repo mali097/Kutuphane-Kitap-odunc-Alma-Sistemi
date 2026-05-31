@@ -9,6 +9,7 @@ public partial class BookDetailPage : ContentPage
     private readonly IBookService _bookService;
     private readonly IBorrowService _borrowService;
     private Book _book = new();
+    private bool _isSubmittingRating;
 
     public BookDetailPage() : this(BookNavigationState.PendingBook ?? new Book()) { }
 
@@ -37,9 +38,26 @@ public partial class BookDetailPage : ContentPage
             return;
         }
 
+        await RefreshBookFromApiAsync();
         await RefreshFavoriteStateAsync();
+        await LoadMyRatingAsync();
         LoadBookData();
-        await LoadCoverImageAsync();
+        ConfigureRatingSection();
+    }
+
+    private async Task RefreshBookFromApiAsync()
+    {
+        if (_book.Id <= 0)
+        {
+            return;
+        }
+
+        var freshBook = await _bookService.GetBookByIdAsync(_book.Id);
+        if (freshBook is not null)
+        {
+            freshBook.IsFavorite = _book.IsFavorite;
+            _book = freshBook;
+        }
     }
 
     private void LoadBookData()
@@ -63,8 +81,11 @@ public partial class BookDetailPage : ContentPage
             ? "Bu kitap için henüz açıklama eklenmemiş."
             : _book.Description;
 
-        RatingLabel.Text = "4.8";
-        ReviewCountLabel.Text = "(128)";
+        AverageRatingView.Rating = _book.AverageRating;
+        RatingLabel.Text = _book.AverageRating?.ToString("0.0") ?? "—";
+        ReviewCountLabel.Text = $"({_book.RatingCount})";
+        CoverView.BookId = _book.Id;
+        UpdateMyRatingDisplay();
 
         if (SessionHelper.IsAdmin)
         {
@@ -83,36 +104,72 @@ public partial class BookDetailPage : ContentPage
         }
     }
 
-    private async Task LoadCoverImageAsync()
+    private void ConfigureRatingSection()
     {
-        CoverPlaceholderLabel.IsVisible = true;
-        CoverImage.IsVisible = false;
-        CoverImage.Source = null;
+        var canRate = SessionHelper.CurrentUser is not null && !SessionHelper.IsAdmin;
+        UserRatingCard.IsVisible = canRate;
+        MyRatingView.IsInteractive = canRate && !_isSubmittingRating;
+    }
 
-        if (_book.Id <= 0)
+    private async Task LoadMyRatingAsync()
+    {
+        if (SessionHelper.CurrentUser is null || SessionHelper.IsAdmin || _book.Id <= 0)
         {
             return;
         }
 
-        try
-        {
-            using var client = ApiClientHelper.CreateClient();
-            using var response = await client.SendAsync(
-                new HttpRequestMessage(HttpMethod.Head, $"/books/{_book.Id}/cover"));
+        var myRating = await _bookService.GetMyRatingAsync(_book.Id);
+        _book.MyRating = myRating;
+    }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return;
-            }
+    private void UpdateMyRatingDisplay()
+    {
+        MyRatingView.Rating = _book.MyRating;
+        MyRatingLabel.Text = _book.MyRating?.ToString("0.0") ?? "Seçin";
+    }
 
-            CoverImage.Source = ImageSource.FromUri(new Uri(ApiClientHelper.GetBookCoverUrl(_book.Id)));
-            CoverImage.IsVisible = true;
-            CoverPlaceholderLabel.IsVisible = false;
-        }
-        catch
+    private void UpdateAverageRatingDisplay()
+    {
+        AverageRatingView.Rating = _book.AverageRating;
+        RatingLabel.Text = _book.AverageRating?.ToString("0.0") ?? "—";
+        ReviewCountLabel.Text = $"({_book.RatingCount})";
+    }
+
+    private async void MyRatingView_RatingChanged(object? sender, decimal score)
+    {
+        if (_isSubmittingRating || SessionHelper.CurrentUser is null || SessionHelper.IsAdmin)
         {
-            // Kapak yoksa emoji placeholder kalır.
+            return;
         }
+
+        _isSubmittingRating = true;
+        ConfigureRatingSection();
+        RatingStatusLabel.IsVisible = true;
+        RatingStatusLabel.Text = "Kaydediliyor...";
+        RatingStatusLabel.TextColor = Color.FromArgb("#757575");
+
+        var result = await _bookService.RateBookAsync(_book.Id, score);
+
+        _isSubmittingRating = false;
+        ConfigureRatingSection();
+
+        if (!result.IsSuccess)
+        {
+            RatingStatusLabel.Text = result.ErrorMessage ?? "Puan kaydedilemedi.";
+            RatingStatusLabel.TextColor = Color.FromArgb("#C62828");
+            MyRatingView.Rating = _book.MyRating;
+            UpdateMyRatingDisplay();
+            return;
+        }
+
+        _book.MyRating = result.MyRating;
+        _book.AverageRating = result.AverageRating;
+        _book.RatingCount = result.RatingCount;
+        UpdateMyRatingDisplay();
+        UpdateAverageRatingDisplay();
+
+        RatingStatusLabel.Text = "Puanınız kaydedildi.";
+        RatingStatusLabel.TextColor = Color.FromArgb("#2E7D32");
     }
 
     private async Task RefreshFavoriteStateAsync()
@@ -140,7 +197,7 @@ public partial class BookDetailPage : ContentPage
     }
 
     private async void Back_Clicked(object sender, EventArgs e)
-        => await Navigation.PopAsync();
+        => await Shell.Current.GoToAsync("..");
 
     private async void FavoriteHeader_Clicked(object sender, EventArgs e)
         => await ToggleFavoriteAsync();
@@ -196,7 +253,7 @@ public partial class BookDetailPage : ContentPage
         if (success)
         {
             await DisplayAlert("✅", "Kitap silindi.", "Tamam");
-            await Navigation.PopAsync();
+            await Shell.Current.GoToAsync("..");
         }
         else
             await DisplayAlert("Hata", "Silme başarısız.", "Tamam");

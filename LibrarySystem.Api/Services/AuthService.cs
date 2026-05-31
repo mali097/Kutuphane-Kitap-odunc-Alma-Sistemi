@@ -76,7 +76,8 @@ public sealed class AuthService : IAuthService
             user.LastName,
             user.Email,
             user.Role,
-            token
+            token,
+            user.CreatedDate
         );
     }
 

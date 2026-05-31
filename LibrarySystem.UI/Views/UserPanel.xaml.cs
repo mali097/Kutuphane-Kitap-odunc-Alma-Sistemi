@@ -9,12 +9,14 @@ public partial class UserPanelPage : ContentPage
 {
     private readonly IBorrowService _borrowService;
     private readonly IBookService _bookService;
+    private readonly IAuthService _authService;
 
     public UserPanelPage()
     {
         InitializeComponent();
         _borrowService = new BorrowService();
         _bookService = new BookService();
+        _authService = new AuthService();
     }
 
     protected override async void OnAppearing()
@@ -34,6 +36,14 @@ public partial class UserPanelPage : ContentPage
         }
 
         SessionHelper.NormalizeProfile(user);
+
+        var profile = await _authService.GetMyProfileAsync();
+        if (profile?.CreatedAt is not null)
+        {
+            user.CreatedAt = profile.CreatedAt;
+            SessionHelper.CurrentUser = user;
+        }
+
         var hasFullName = !string.IsNullOrWhiteSpace(user.FullName);
         NameLabel.Text = hasFullName ? user.FullName!.Trim() : SessionHelper.GetDisplayUsername(user);
         UsernameLabel.IsVisible = !hasFullName;

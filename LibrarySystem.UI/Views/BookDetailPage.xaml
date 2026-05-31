@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:LibrarySystem.UI.Controls"
              x:Class="LibrarySystem.UI.Views.BookDetailPage"
              Shell.NavBarIsVisible="False">
 
@@ -37,51 +38,54 @@
         </Grid>
 
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="14,0,14,16" Spacing="14">
+            <VerticalStackLayout Padding="14,0,14,24" Spacing="16">
 
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" Padding="4,0">
-                    <Border WidthRequest="110"
-                            HeightRequest="150"
-                            BackgroundColor="#2B1B4F"
-                            Stroke="#FFFFFF33"
-                            StrokeShape="RoundRectangle 14">
-                        <Grid>
-                            <Label x:Name="CoverPlaceholderLabel"
-                                   Text="📕"
-                                   FontSize="48"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center"
-                                   TextColor="White" />
-                            <Image x:Name="CoverImage"
-                                   Aspect="AspectFill"
-                                   IsVisible="False" />
-                        </Grid>
-                    </Border>
-                    <VerticalStackLayout Spacing="8" VerticalOptions="Center">
-                        <Label x:Name="TitleLabel"
-                               FontSize="22"
-                               FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
-                               LineBreakMode="WordWrap" />
-                        <Label x:Name="AuthorLabel"
-                               FontSize="14"
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}" />
-                        <HorizontalStackLayout Spacing="6">
-                            <Label Text="★★★★★" TextColor="#FFB800" FontSize="12" />
-                            <Label x:Name="RatingLabel"
-                                   Text="4.8"
-                                   FontSize="13"
-                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
-                                   FontAttributes="Bold" />
-                            <Label x:Name="ReviewCountLabel"
-                                   Text="(0)"
-                                   FontSize="12"
-                                   TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                        </HorizontalStackLayout>
+                <Border WidthRequest="130"
+                        HeightRequest="180"
+                        BackgroundColor="#2B1B4F"
+                        Stroke="#FFFFFF33"
+                        StrokeShape="RoundRectangle 14"
+                        HorizontalOptions="Center"
+                        Clip="RoundRectangle 14">
+                    <controls:BookCoverImage x:Name="CoverView"
+                                             PlaceholderFontSize="52" />
+                </Border>
+
+                <VerticalStackLayout Spacing="10">
+                    <Label x:Name="TitleLabel"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
+                           LineBreakMode="WordWrap" />
+                    <Label x:Name="AuthorLabel"
+                           FontSize="14"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}" />
+
+                    <HorizontalStackLayout Spacing="8"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center">
+                        <controls:StarRatingView x:Name="AverageRatingView"
+                                                 StarSize="20" />
+                        <Label x:Name="RatingLabel"
+                               Text="—"
+                               FontSize="13"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
+                               FontAttributes="Bold" />
+                        <Label x:Name="ReviewCountLabel"
+                               Text="(0)"
+                               FontSize="12"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="8"
+                                           HorizontalOptions="Center">
                         <Border BackgroundColor="{AppThemeBinding Light={StaticResource AccentSoftPurpleColorLight}, Dark={StaticResource AccentSoftPurpleColorDark}}"
                                 StrokeShape="RoundRectangle 12"
-                                Padding="10,4"
-                                HorizontalOptions="Start">
+                                Padding="10,4">
                             <Label x:Name="CategoryTagLabel"
                                    TextColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}"
                                    FontSize="12"
@@ -90,9 +94,44 @@
                         <Label x:Name="StatusLabel"
                                FontSize="12"
                                FontAttributes="Bold"
+                               VerticalOptions="Center"
                                TextColor="#2E7D32" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <Border x:Name="UserRatingCard"
+                        Style="{StaticResource ThemedCard}"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="16"
+                        IsVisible="False">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Puanınız"
+                               FontAttributes="Bold"
+                               FontSize="16"
+                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                        <Label Text="Bu kitaba verdiğiniz puanı seçin. Her kullanıcı kendi puanını verebilir."
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                        <HorizontalStackLayout Spacing="10"
+                                               HorizontalOptions="Center">
+                            <controls:StarRatingView x:Name="MyRatingView"
+                                                     StarSize="28"
+                                                     IsInteractive="True"
+                                                     RatingChanged="MyRatingView_RatingChanged" />
+                            <Label x:Name="MyRatingLabel"
+                                   Text="—"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                        </HorizontalStackLayout>
+                        <Label x:Name="RatingStatusLabel"
+                               IsVisible="False"
+                               FontSize="12"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
                     </VerticalStackLayout>
-                </Grid>
+                </Border>
 
                 <Border Style="{StaticResource ThemedCard}"
                         StrokeShape="RoundRectangle 18"
@@ -103,49 +142,75 @@
                                FontSize="16"
                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
 
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
-                            <Label Grid.Row="0" Text="👤" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="2">
-                                <Label Text="Yazar" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="InfoAuthorLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="👤" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Yazar" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="InfoAuthorLabel" FontSize="14" FontAttributes="Bold" LineBreakMode="WordWrap" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
 
-                            <Label Grid.Row="1" Text="📊" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
-                                <Label Text="Barkod Kodu" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="IsbnLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
 
-                            <Label Grid.Row="2" Text="📂" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="2">
-                                <Label Text="Tür" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="CategoryLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="📊" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Barkod Kodu" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="IsbnLabel" FontSize="14" FontAttributes="Bold" LineBreakMode="WordWrap" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
 
-                            <Label Grid.Row="3" Text="📅" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="3" Grid.Column="1" Spacing="2">
-                                <Label Text="Yayınlanma Tarihi" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="YearLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
 
-                            <Label Grid.Row="4" Text="📄" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="4" Grid.Column="1" Spacing="2">
-                                <Label Text="Sayfa Sayısı" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="PageLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="📂" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Tür" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="CategoryLabel" FontSize="14" FontAttributes="Bold" LineBreakMode="WordWrap" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
 
-                            <Label Grid.Row="5" Text="🏢" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="5" Grid.Column="1" Spacing="2">
-                                <Label Text="Yayınevi" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label x:Name="PublisherLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
 
-                            <Label Grid.Row="6" Text="🌐" FontSize="16" />
-                            <VerticalStackLayout Grid.Row="6" Grid.Column="1" Spacing="2">
-                                <Label Text="Dil" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
-                                <Label Text="Türkçe" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
-                            </VerticalStackLayout>
-                        </Grid>
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="📅" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Yayınlanma Tarihi" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="YearLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
+
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="📄" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Sayfa Sayısı" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="PageLabel" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
+
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="🏢" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Yayınevi" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label x:Name="PublisherLabel" FontSize="14" FontAttributes="Bold" LineBreakMode="WordWrap" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource DividerColorLight}, Dark={StaticResource DividerColorDark}}" />
+
+                            <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+                                <Label Text="🌐" FontSize="16" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="Dil" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                                    <Label Text="Türkçe" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

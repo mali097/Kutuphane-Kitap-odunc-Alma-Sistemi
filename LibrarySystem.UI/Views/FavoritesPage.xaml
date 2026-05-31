@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:LibrarySystem.UI.Controls"
              x:Class="LibrarySystem.UI.Views.FavoritesPage"
              Title="Favorilerim"
              Shell.NavBarIsVisible="False">
@@ -66,11 +67,10 @@
                                     HeightRequest="72"
                                     StrokeShape="RoundRectangle 10"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource AccentSoftPurpleColorLight}, Dark={StaticResource AccentSoftPurpleColorDark}}"
-                                    VerticalOptions="Center">
-                                <Label Text="📕"
-                                       FontSize="28"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                    VerticalOptions="Center"
+                                    Clip="RoundRectangle 10">
+                                <controls:BookCoverImage BookId="{Binding BookId}"
+                                                         PlaceholderFontSize="28" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                 <Label Text="{Binding BookTitle}"

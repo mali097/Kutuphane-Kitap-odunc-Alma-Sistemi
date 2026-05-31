@@ -6,5 +6,6 @@ public sealed record UserLoginResponse(
     string LastName,
     string Email,
     string Role,
-    string Token
+    string Token,
+    DateTime CreatedDate
 );

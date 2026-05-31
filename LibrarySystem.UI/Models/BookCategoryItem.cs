@@ -50,13 +50,13 @@ public static class BookCategories
     public static IReadOnlyList<string> DisplayNames { get; } =
         All.Select(c => c.Name).ToList();
 
-  // Backend bağlanana kadar örnek kitap sayıları (fotoğraftaki gibi)
+  // Kategori başına örnek kitap sayısı (API boşken)
     private static readonly Dictionary<int, int> DemoBookCounts = new()
     {
-        [1] = 4, [2] = 6, [3] = 5, [4] = 7, [5] = 3, [6] = 8,
-        [7] = 4, [8] = 3, [9] = 2, [10] = 5, [11] = 3, [12] = 9,
-        [13] = 4, [14] = 3, [15] = 5, [16] = 6, [17] = 4, [18] = 2,
-        [19] = 3, [20] = 4, [21] = 7, [22] = 5
+        [1] = 3, [2] = 3, [3] = 3, [4] = 3, [5] = 3, [6] = 3,
+        [7] = 3, [8] = 3, [9] = 3, [10] = 3, [11] = 3, [12] = 3,
+        [13] = 3, [14] = 3, [15] = 3, [16] = 3, [17] = 3, [18] = 3,
+        [19] = 3, [20] = 3, [21] = 3, [22] = 3
     };
 
     public static List<BookCategoryItem> CreateListWithCounts(

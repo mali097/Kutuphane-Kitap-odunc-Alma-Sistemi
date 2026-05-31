@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:LibrarySystem.UI.Controls"
              x:Class="LibrarySystem.UI.Views.CategoryDetailPage"
              Shell.NavBarIsVisible="False">
 
@@ -90,11 +91,10 @@
                                             HeightRequest="72"
                                             BackgroundColor="{AppThemeBinding Light={StaticResource AccentSoftPurpleColorLight}, Dark={StaticResource AccentSoftPurpleColorDark}}"
                                             StrokeShape="RoundRectangle 10"
-                                            VerticalOptions="Center">
-                                        <Label Text="📕"
-                                               FontSize="26"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center" />
+                                            VerticalOptions="Center"
+                                            Clip="RoundRectangle 10">
+                                        <controls:BookCoverImage BookId="{Binding Book.Id}"
+                                                                 PlaceholderFontSize="26" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Book.Title}"

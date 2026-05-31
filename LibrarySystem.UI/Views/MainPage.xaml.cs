@@ -13,6 +13,11 @@ public partial class MainPage : ContentPage
     private List<BookCategoryItem> _categories = new();
     private CancellationTokenSource? _searchDebounceCts;
 
+    private static readonly string[] PopularRowColors =
+    [
+        "#F0D9A8", "#2C6DFF", "#2EA77E", "#F07B3A", "#7A4BD1"
+    ];
+
     public MainPage()
     {
         InitializeComponent();
@@ -20,15 +25,7 @@ public partial class MainPage : ContentPage
         _borrowService = new BorrowService();
         _recommendationService = new RecommendationService();
         _categories = BookCategories.CreateListWithCounts(Enumerable.Empty<Book>(), useDemoCountsWhenEmpty: true);
-
-        PopularCollection.ItemsSource = new List<PopularBookCard>
-        {
-            new(1, "Suç ve Ceza", "Fyodor Dostoyevski", "4.8", "#F0D9A8"),
-            new(2, "1984", "George Orwell", "4.7", "#2C6DFF"),
-            new(3, "Kürk Mantolu Madonna", "Sabahattin Ali", "4.6", "#2EA77E"),
-            new(4, "Simyacı", "Paulo Coelho", "4.5", "#F07B3A"),
-            new(5, "Beyaz Zambaklar Ülkesinde", "Grigory Petrov", "4.4", "#7A4BD1")
-        };
+        PopularCollection.ItemsSource = Array.Empty<PopularBookCard>();
     }
 
     protected override async void OnAppearing()
@@ -49,6 +46,7 @@ public partial class MainPage : ContentPage
         UpdateAuthorRecommendationUi();
         await LoadAuthorRecommendationsAsync();
         await LoadBooksAsync();
+        await LoadTopRatedBooksAsync();
         await LoadActiveBorrowsAsync();
         await LoadCategoriesAsync();
 
@@ -138,25 +136,76 @@ public partial class MainPage : ContentPage
     private async Task LoadBooksAsync()
     {
         _allBooks = await _bookService.GetAllBooksAsync();
-
-        if (SessionHelper.CurrentUser != null)
-        {
-            var favs = await _bookService.GetFavoritesAsync(SessionHelper.CurrentUser.Id);
-            var favIds = favs.Select(f => f.BookId).ToHashSet();
-            foreach (var book in _allBooks)
-                book.IsFavorite = favIds.Contains(book.Id);
-        }
-
-        ApplyBookFilter();
+        await ApplyFavoriteFlagsAsync();
+        UpdateSearchResultsUi();
     }
 
-    private void ApplyBookFilter()
+    private async Task LoadTopRatedBooksAsync()
     {
-        BooksCollectionView.ItemsSource = _allBooks.ToList();
-        BooksEmptyHintLabel.IsVisible = _allBooks.Count == 0;
-        BooksEmptyHintLabel.Text = _allBooks.Count == 0 && !string.IsNullOrWhiteSpace(BookService.LastFetchError)
-            ? $"Kitaplar yüklenemedi. API çalışıyor mu? ({BookService.LastFetchError})"
-            : "📭 Kitap bulunamadı.";
+        var topRated = await _bookService.GetTopRatedBooksAsync();
+        if (topRated.Count == 0)
+        {
+            topRated = _allBooks
+                .Where(book => book.AverageRating.HasValue)
+                .OrderByDescending(book => book.AverageRating)
+                .ThenByDescending(book => book.RatingCount)
+                .Take(5)
+                .Select(book => new TopRatedBook
+                {
+                    BookId = book.Id,
+                    Title = book.Title,
+                    Author = book.Author,
+                    AverageRating = book.AverageRating!.Value,
+                    RatingCount = book.RatingCount
+                })
+                .ToList();
+        }
+
+        PopularCollection.ItemsSource = topRated
+            .Select((book, index) => new PopularBookCard(
+                book.BookId,
+                index + 1,
+                book.Title,
+                book.Author,
+                book.AverageRating.ToString("0.0"),
+                PopularRowColors[index % PopularRowColors.Length]))
+            .ToList();
+    }
+
+    private async Task ApplyFavoriteFlagsAsync()
+    {
+        if (SessionHelper.CurrentUser == null)
+        {
+            return;
+        }
+
+        var favs = await _bookService.GetFavoritesAsync(SessionHelper.CurrentUser.Id);
+        var favIds = favs.Select(f => f.BookId).ToHashSet();
+        foreach (var book in _allBooks)
+        {
+            book.IsFavorite = favIds.Contains(book.Id);
+        }
+    }
+
+    private void UpdateSearchResultsUi()
+    {
+        var term = KitapSearchBar.Text?.Trim();
+        var hasSearch = !string.IsNullOrWhiteSpace(term);
+        SearchResultsPanel.IsVisible = hasSearch;
+
+        if (!hasSearch)
+        {
+            return;
+        }
+
+        var results = _allBooks
+            .Where(book =>
+                book.Title.Contains(term!, StringComparison.OrdinalIgnoreCase)
+                || book.Author.Contains(term!, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        SearchResultsCollection.ItemsSource = results;
+        SearchEmptyLabel.IsVisible = results.Count == 0;
     }
 
     private async void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
@@ -180,57 +229,60 @@ public partial class MainPage : ContentPage
     {
         var term = KitapSearchBar.Text?.Trim();
 
-        _allBooks = string.IsNullOrWhiteSpace(term)
-            ? await _bookService.GetAllBooksAsync()
-            : await _bookService.SearchBooksAsync(term);
-
-        if (SessionHelper.CurrentUser != null)
+        if (string.IsNullOrWhiteSpace(term))
         {
-            var favs = await _bookService.GetFavoritesAsync(SessionHelper.CurrentUser.Id);
-            var favIds = favs.Select(f => f.BookId).ToHashSet();
-            foreach (var book in _allBooks)
+            _allBooks = await _bookService.GetAllBooksAsync();
+        }
+        else
+        {
+            _allBooks = await _bookService.SearchBooksAsync(term);
+
+            if (_allBooks.Count == 0)
             {
-                book.IsFavorite = favIds.Contains(book.Id);
+                var allBooks = await _bookService.GetAllBooksAsync();
+                _allBooks = allBooks
+                    .Where(book =>
+                        book.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                        || book.Author.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
             }
         }
 
-        ApplyBookFilter();
+        await ApplyFavoriteFlagsAsync();
+        UpdateSearchResultsUi();
     }
 
-    private async void Book_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void SearchResult_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is Book book)
+        if (e.CurrentSelection.FirstOrDefault() is not Book book)
         {
-            BooksCollectionView.SelectedItem = null;
-            BookNavigationState.PendingBook = book;
-            await Shell.Current.GoToAsync(nameof(BookDetailPage));
+            return;
         }
+
+        SearchResultsCollection.SelectedItem = null;
+        BookNavigationState.PendingBook = book;
+        await Shell.Current.GoToAsync(nameof(BookDetailPage));
     }
 
-    private async void Favorite_Clicked(object sender, EventArgs e)
+    private async void PopularBook_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is Button btn && btn.CommandParameter is Book book)
+        if (e.CurrentSelection.FirstOrDefault() is not PopularBookCard card)
         {
-            if (SessionHelper.CurrentUser == null) return;
-            int userId = SessionHelper.CurrentUser.Id;
+            return;
+        }
 
-            bool success;
-            if (book.IsFavorite)
-                success = await _bookService.RemoveFavoriteAsync(userId, book.Id);
-            else
-                success = await _bookService.AddFavoriteAsync(userId, book.Id);
-
-            if (!success)
+        PopularCollection.SelectedItem = null;
+        var book = _allBooks.FirstOrDefault(item => item.Id == card.BookId)
+            ?? await _bookService.GetBookByIdAsync(card.BookId)
+            ?? new Book
             {
-                await DisplayAlert("Hata", "Favori işlemi başarısız. API çalışıyor mu ve kitap veritabanında var mı kontrol edin.", "Tamam");
-                return;
-            }
+                Id = card.BookId,
+                Title = card.Title,
+                Author = card.Author
+            };
 
-            book.IsFavorite = !book.IsFavorite;
-            var temp = BooksCollectionView.ItemsSource;
-            BooksCollectionView.ItemsSource = null;
-            BooksCollectionView.ItemsSource = temp;
-        }
+        BookNavigationState.PendingBook = book;
+        await Shell.Current.GoToAsync(nameof(BookDetailPage));
     }
 
     private async void Borrow_Clicked(object sender, EventArgs e)
@@ -308,5 +360,5 @@ public partial class MainPage : ContentPage
     }
 
     private sealed record QuoteCard(string Author, string BookTitle, string Text);
-    private sealed record PopularBookCard(int Rank, string Title, string Author, string Rating, string RowColor);
+    private sealed record PopularBookCard(int BookId, int Rank, string Title, string Author, string Rating, string RowColor);
 }

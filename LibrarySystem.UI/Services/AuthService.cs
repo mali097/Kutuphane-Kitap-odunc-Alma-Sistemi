@@ -55,7 +55,8 @@ public class AuthService : IAuthService
                 Email = trimmedEmail,
                 FullName = $"{login.FirstName} {login.LastName}".Trim(),
                 Role = login.Role,
-                Token = login.Token
+                Token = login.Token,
+                CreatedAt = login.CreatedDate
             });
         }
         catch (HttpRequestException)
@@ -70,6 +71,35 @@ public class AuthService : IAuthService
         catch
         {
             return LoginResult.Fail("Bağlantı hatası oluştu.");
+        }
+    }
+
+    public async Task<User?> GetMyProfileAsync()
+    {
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var profile = await _httpClient.GetFromJsonAsync<UserProfileDto>("/api/users/me");
+            if (profile is null || profile.Id <= 0)
+            {
+                return null;
+            }
+
+            return new User
+            {
+                Id = profile.Id,
+                UserId = profile.Id,
+                Email = profile.Email ?? string.Empty,
+                FullName = $"{profile.FirstName} {profile.LastName}".Trim(),
+                Role = profile.Role,
+                Username = GetUsernameFromEmail(profile.Email ?? string.Empty),
+                Token = SessionHelper.CurrentUser?.Token ?? string.Empty,
+                CreatedAt = profile.CreatedDate
+            };
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -98,11 +128,17 @@ public class AuthService : IAuthService
         try
         {
             ApiClientHelper.ApplySessionHeaders(_httpClient);
-            var response = await _httpClient.PutAsJsonAsync($"/api/auth/change-password/{userId}",
-                new { OldPassword = oldPassword, NewPassword = newPassword });
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/change-password", new
+            {
+                CurrentPassword = oldPassword,
+                NewPassword = newPassword
+            });
             return response.IsSuccessStatusCode;
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 
     public async Task<List<User>> GetAllUsersAsync()
@@ -176,5 +212,29 @@ public class AuthService : IAuthService
 
         [JsonPropertyName("token")]
         public string Token { get; set; } = string.Empty;
+
+        [JsonPropertyName("createdDate")]
+        public DateTime? CreatedDate { get; set; }
+    }
+
+    private sealed class UserProfileDto
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("firstName")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [JsonPropertyName("lastName")]
+        public string LastName { get; set; } = string.Empty;
+
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+
+        [JsonPropertyName("role")]
+        public string? Role { get; set; }
+
+        [JsonPropertyName("createdDate")]
+        public DateTime? CreatedDate { get; set; }
     }
 }

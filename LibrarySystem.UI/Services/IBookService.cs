@@ -8,8 +8,12 @@ public interface IBookService
     Task<bool> UpdateBookAsync(Book book);
 
     Task<List<Book>> GetAllBooksAsync();
+    Task<Book?> GetBookByIdAsync(int bookId);
+    Task<List<TopRatedBook>> GetTopRatedBooksAsync();
     Task<List<Book>> GetBooksByAuthorAsync(string author);
     Task<List<Book>> SearchBooksAsync(string search);
+    Task<decimal?> GetMyRatingAsync(int bookId);
+    Task<RateBookResult> RateBookAsync(int bookId, decimal score);
     Task<List<FavoriteBook>> GetFavoritesAsync(int userId);
     Task<bool> AddFavoriteAsync(int userId, int bookId);
     Task<bool> RemoveFavoriteAsync(int userId, int bookId);

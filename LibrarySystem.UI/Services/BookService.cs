@@ -23,6 +23,52 @@ public class BookService : IBookService
     public async Task<List<Book>> GetAllBooksAsync()
         => await FetchBooksAsync("/api/books");
 
+    public async Task<Book?> GetBookByIdAsync(int bookId)
+    {
+        if (bookId <= 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            using var response = await _httpClient.GetAsync($"/api/books/{bookId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var dto = await response.Content.ReadFromJsonAsync<ApiBookDto>(ApiJsonOptions);
+            return dto is null ? null : MapFromApi(dto);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<List<TopRatedBook>> GetTopRatedBooksAsync()
+    {
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            var items = await _httpClient.GetFromJsonAsync<List<ApiTopRatedDto>>("/api/books/top-rated", ApiJsonOptions);
+            return items?.Select(item => new TopRatedBook
+            {
+                BookId = item.BookId,
+                Title = item.Title ?? string.Empty,
+                Author = item.Author ?? string.Empty,
+                AverageRating = item.AverageRating,
+                RatingCount = item.RatingCount
+            }).ToList() ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     public async Task<List<Book>> GetBooksByAuthorAsync(string author)
     {
         if (string.IsNullOrWhiteSpace(author))
@@ -41,6 +87,72 @@ public class BookService : IBookService
         }
 
         return await FetchBooksAsync($"/api/books?search={Uri.EscapeDataString(search.Trim())}");
+    }
+
+    public async Task<decimal?> GetMyRatingAsync(int bookId)
+    {
+        if (bookId <= 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            using var response = await _httpClient.GetAsync("/api/users/me/ratings");
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var items = await response.Content.ReadFromJsonAsync<List<ApiUserRatingDto>>(ApiJsonOptions);
+            return items?.FirstOrDefault(r => r.BookId == bookId)?.MyRating;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<RateBookResult> RateBookAsync(int bookId, decimal score)
+    {
+        if (bookId <= 0)
+        {
+            return new RateBookResult { IsSuccess = false, ErrorMessage = "Geçersiz kitap." };
+        }
+
+        if (score < 0.5m || score > 5m || score * 2 != Math.Truncate(score * 2))
+        {
+            return new RateBookResult { IsSuccess = false, ErrorMessage = "Puan 0.5 ile 5 arasında yarım artışlarla olmalıdır." };
+        }
+
+        try
+        {
+            ApiClientHelper.ApplySessionHeaders(_httpClient);
+            using var response = await _httpClient.PostAsJsonAsync(
+                $"/api/books/{bookId}/ratings",
+                new { score });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                var errorMessage = TryReadApiMessage(errorBody) ?? "Puan kaydedilemedi.";
+                return new RateBookResult { IsSuccess = false, ErrorMessage = errorMessage };
+            }
+
+            var dto = await response.Content.ReadFromJsonAsync<ApiRateBookResponseDto>(ApiJsonOptions);
+            return new RateBookResult
+            {
+                IsSuccess = true,
+                MyRating = dto?.MyRating ?? score,
+                AverageRating = dto?.AverageRating,
+                RatingCount = dto?.RatingCount ?? 0
+            };
+        }
+        catch (Exception ex)
+        {
+            return new RateBookResult { IsSuccess = false, ErrorMessage = ex.Message };
+        }
     }
 
     private async Task<List<Book>> FetchBooksAsync(string url)
@@ -94,7 +206,9 @@ public class BookService : IBookService
                 return new();
             }
 
-            return items.Select(MapFavorite).ToList();
+            var favorites = items.Select(MapFavorite).ToList();
+            await EnrichFavoritesWithRatingsAsync(favorites);
+            return favorites;
         }
         catch
         {
@@ -143,6 +257,34 @@ public class BookService : IBookService
     public Task<bool> DeleteBookAsync(int bookId)
         => Task.FromResult(true);
 
+    private static string? TryReadApiMessage(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("message", out var messageElement))
+            {
+                return messageElement.GetString();
+            }
+
+            if (doc.RootElement.TryGetProperty("Message", out var altMessageElement))
+            {
+                return altMessageElement.GetString();
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
     private static Book MapFromApi(ApiBookDto dto) => new()
     {
         Id = dto.Id,
@@ -157,7 +299,9 @@ public class BookService : IBookService
         Publisher = dto.Publisher ?? "",
         Description = dto.Description ?? "",
         CoverImageUrl = ApiClientHelper.GetBookCoverUrl(dto.Id),
-        IsAvailable = dto.IsAvailable
+        IsAvailable = dto.IsAvailable,
+        AverageRating = dto.AverageRating,
+        RatingCount = dto.RatingCount
     };
 
     private static List<Book> GetLocalFallbackBooks() =>
@@ -168,6 +312,26 @@ public class BookService : IBookService
         new() { Id = 4, Title = "Simyacı", Author = "Paulo Coelho", ISBN = "9789750719503", Category = "Kişisel Gelişim", PublishYear = 1988, PageCount = 184, Publisher = "Can Yayınları", Description = "Kişisel efsane ve kader üzerine sembolik bir yolculuk.", IsAvailable = true },
         new() { Id = 5, Title = "Kara Kitap", Author = "Orhan Pamuk", ISBN = "9789750719121", Category = "Polisiye", PublishYear = 1990, PageCount = 448, Publisher = "İletişim", Description = "İstanbul'da geçen gizemli ve katmanlı bir polisiye.", IsAvailable = true }
     ];
+
+    private async Task EnrichFavoritesWithRatingsAsync(List<FavoriteBook> favorites)
+    {
+        if (favorites.Count == 0)
+        {
+            return;
+        }
+
+        var books = await FetchBooksAsync("/api/books");
+        var ratingLookup = books.ToDictionary(book => book.Id, book => book.AverageRating);
+
+        foreach (var favorite in favorites)
+        {
+            favorite.RatingDisplay = FormatAverageRating(
+                ratingLookup.TryGetValue(favorite.BookId, out var rating) ? rating : null);
+        }
+    }
+
+    private static string FormatAverageRating(decimal? rating)
+        => rating.HasValue ? rating.Value.ToString("0.0") : "—";
 
     private static FavoriteBook MapFavorite(ApiFavoriteDto dto) => new()
     {
@@ -219,6 +383,37 @@ public class BookService : IBookService
         public string? Publisher { get; set; }
         public string? Description { get; set; }
         public bool IsAvailable { get; set; } = true;
+        public decimal? AverageRating { get; set; }
+        public int RatingCount { get; set; }
+    }
+
+    private sealed class ApiTopRatedDto
+    {
+        [JsonPropertyName("bookId")]
+        public int BookId { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("author")]
+        public string? Author { get; set; }
+
+        [JsonPropertyName("averageRating")]
+        public decimal AverageRating { get; set; }
+
+        [JsonPropertyName("ratingCount")]
+        public int RatingCount { get; set; }
+    }
+
+    private sealed class ApiUserRatingDto
+    {
+        public int BookId { get; set; }
+        public decimal MyRating { get; set; }
+    }
+
+    private sealed class ApiRateBookResponseDto
+    {
+        public decimal MyRating { get; set; }
         public decimal? AverageRating { get; set; }
         public int RatingCount { get; set; }
     }

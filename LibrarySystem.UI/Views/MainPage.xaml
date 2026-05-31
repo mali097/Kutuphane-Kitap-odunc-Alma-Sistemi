@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:conv="clr-namespace:LibrarySystem.UI.Converters"
+             xmlns:controls="clr-namespace:LibrarySystem.UI.Controls"
              x:Class="LibrarySystem.UI.Views.MainPage"
              Title="Ana Sayfa">
 
     <ContentPage.Resources>
-        <conv:BoolToStatusTextConverter x:Key="StatusText" />
-        <conv:BoolToStatusColorConverter x:Key="StatusColor" />
-        <conv:BoolToColorConverter x:Key="BgColor" />
-        <conv:BoolToFavoriteIconConverter x:Key="FavIcon" />
-
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
             <GradientStop Color="#2F1B68" Offset="0.0" />
             <GradientStop Color="#B63B6E" Offset="0.55" />
@@ -18,7 +13,7 @@
         </LinearGradientBrush>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- Geniş arama -->
         <Grid Grid.Row="0" Padding="14,14,14,10" Background="{StaticResource HeaderGradient}"
@@ -71,8 +66,60 @@
                    FontSize="14" />
         </Grid>
 
+        <Border x:Name="SearchResultsPanel"
+                Grid.Row="1"
+                IsVisible="False"
+                Margin="14,0,14,8"
+                Style="{StaticResource ThemedCard}"
+                StrokeShape="RoundRectangle 16"
+                Padding="12">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Arama sonuçları"
+                       FontAttributes="Bold"
+                       FontSize="14"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                <Label x:Name="SearchEmptyLabel"
+                       IsVisible="False"
+                       Text="Eşleşen kitap bulunamadı."
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}" />
+                <CollectionView x:Name="SearchResultsCollection"
+                                MaximumHeightRequest="260"
+                                SelectionMode="Single"
+                                SelectionChanged="SearchResult_SelectionChanged">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="10,8"
+                                    Margin="0,0,0,6"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource SubBackgroundColorLight}, Dark={StaticResource SubBackgroundColorDark}}"
+                                    StrokeShape="RoundRectangle 12">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Title}"
+                                               FontAttributes="Bold"
+                                               FontSize="13"
+                                               LineBreakMode="TailTruncation"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}" />
+                                        <Label Text="{Binding Author}"
+                                               FontSize="12"
+                                               LineBreakMode="TailTruncation"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1"
+                                           Text="→"
+                                           FontSize="16"
+                                           VerticalOptions="Center"
+                                           TextColor="{AppThemeBinding Light={StaticResource AccentPurpleColorLight}, Dark={StaticResource AccentPurpleColorDark}}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+
         <!-- Ana sayfa içeriği -->
-        <ScrollView x:Name="HomePanel" Grid.Row="1">
+        <ScrollView x:Name="HomePanel" Grid.Row="2">
             <VerticalStackLayout Padding="14" Spacing="14">
 
                 <Border Style="{StaticResource ThemedCardAlt}"
@@ -152,8 +199,7 @@
                 <Border x:Name="PopularBooksSection"
                         Style="{StaticResource ThemedCardAlt}"
                         StrokeShape="RoundRectangle 20"
-                        Padding="14"
-                        MinimumHeightRequest="280">
+                        Padding="14">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
                             <Border WidthRequest="36" HeightRequest="36"
@@ -166,7 +212,7 @@
                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColorLight}, Dark={StaticResource TextPrimaryColorDark}}"
                                        FontAttributes="Bold"
                                        FontSize="16" />
-                                <Label Text="Bu dönem öne çıkan eserler"
+                                <Label Text="En yüksek puanlı 5 kitap"
                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColorLight}, Dark={StaticResource TextSecondaryColorDark}}"
                                        FontSize="12" />
                             </VerticalStackLayout>
@@ -174,7 +220,8 @@
 
                         <CollectionView x:Name="PopularCollection"
                                         ItemsLayout="VerticalList"
-                                        SelectionMode="None">
+                                        SelectionMode="Single"
+                                        SelectionChanged="PopularBook_SelectionChanged">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BackgroundColor="{Binding RowColor}"
@@ -195,8 +242,10 @@
                                             <Border Grid.Column="1"
                                                     WidthRequest="46" HeightRequest="60"
                                                     StrokeShape="RoundRectangle 10"
-                                                    BackgroundColor="#00000022">
-                                                <Label Text="📕" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" />
+                                                    BackgroundColor="#00000022"
+                                                    Clip="RoundRectangle 10">
+                                                <controls:BookCoverImage BookId="{Binding BookId}"
+                                                                         PlaceholderFontSize="22" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="2" Spacing="2">
                                                 <Label Text="{Binding Title}" TextColor="White" FontAttributes="Bold" FontSize="13" />
@@ -292,79 +341,12 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border BackgroundColor="{AppThemeBinding Light={StaticResource InversePanelBgColorLight}, Dark={StaticResource InversePanelBgColorDark}}"
-                        Stroke="{AppThemeBinding Light={StaticResource InversePanelStrokeColorLight}, Dark={StaticResource InversePanelStrokeColorDark}}"
-                        StrokeShape="RoundRectangle 18"
-                        Padding="14">
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="📚 Kütüphanedeki kitaplar"
-                               TextColor="White"
-                               FontAttributes="Bold"
-                               FontSize="13"/>
-
-                        <Grid ColumnDefinitions="2*,2*,1.5*,Auto" Padding="4,0" ColumnSpacing="10">
-                            <Label Text="KİTAP ADI" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
-                            <Label Grid.Column="1" Text="YAZAR" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
-                            <Label Grid.Column="2" Text="DURUM" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold"/>
-                            <Label Grid.Column="3" Text="" TextColor="#D7D2FF" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
-                        </Grid>
-
-                        <Label x:Name="BooksEmptyHintLabel"
-                               IsVisible="False"
-                               Text="📭 Kitap bulunamadı."
-                               TextColor="#FFB4AB"
-                               FontSize="12"
-                               HorizontalTextAlignment="Center" />
-
-                        <CollectionView x:Name="BooksCollectionView"
-                                        SelectionMode="Single"
-                                        SelectionChanged="Book_SelectionChanged"
-                                        EmptyView="📭 Kitap bulunamadı."
-                                        ItemsLayout="VerticalList">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BackgroundColor="#0000022"
-                                            Stroke="#FFFFFF14"
-                                            StrokeShape="RoundRectangle 14"
-                                            Padding="10"
-                                            Margin="0,6,0,0">
-                                        <Grid ColumnDefinitions="2*,2*,1.5*,Auto" ColumnSpacing="10">
-                                            <Label Text="{Binding Title}"
-                                                   TextColor="White"
-                                                   FontAttributes="Bold"
-                                                   FontSize="12"/>
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding Author}"
-                                                   TextColor="#FFFFFFCC"
-                                                   FontSize="12"/>
-                                            <Label Grid.Column="2"
-                                                   Text="{Binding IsAvailable, Converter={StaticResource StatusText}}"
-                                                   TextColor="#B7D2FF"
-                                                   FontSize="12"/>
-                                            <Border Grid.Column="3"
-                                                    StrokeShape="RoundRectangle 14"
-                                                    BackgroundColor="#FFFFFFE6"
-                                                    Padding="8,4"
-                                                    HorizontalOptions="End">
-                                                <Label Text="{Binding IsAvailable, Converter={StaticResource StatusText}}"
-                                                       TextColor="{Binding IsAvailable, Converter={StaticResource StatusColor}}"
-                                                       FontSize="10"
-                                                       FontAttributes="Bold"/>
-                                            </Border>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </VerticalStackLayout>
-                </Border>
-
             </VerticalStackLayout>
         </ScrollView>
 
         <!-- Kategoriler sekmesi -->
         <ScrollView x:Name="CategoriesPanel"
-                    Grid.Row="1"
+                    Grid.Row="2"
                     IsVisible="False"
                     BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
             <VerticalStackLayout Padding="14,10" Spacing="12">
@@ -385,7 +367,7 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Style="{StaticResource ThemedTabBar}"
                 StrokeShape="RoundRectangle 24"
                 Padding="14,10"

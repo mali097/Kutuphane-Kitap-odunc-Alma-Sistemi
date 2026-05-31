@@ -16,6 +16,13 @@ public partial class ChangePasswordPage : ContentPage
     private async void Change_Clicked(object sender, EventArgs e)
     {
         ErrorLabel.IsVisible = false;
+
+        if (SessionHelper.CurrentUser is null)
+        {
+            ShowError("Şifre değiştirmek için giriş yapmalısınız.");
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(OldPasswordEntry.Text)) { ShowError("Mevcut şifre boş olamaz."); return; }
         if (string.IsNullOrWhiteSpace(NewPasswordEntry.Text) || NewPasswordEntry.Text.Length < 6)
         { ShowError("Yeni şifre en az 6 karakter olmalı."); return; }

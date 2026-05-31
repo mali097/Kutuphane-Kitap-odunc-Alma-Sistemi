@@ -62,9 +62,7 @@ public partial class SettingsPage : ContentPage
     }
 
     private async void About_Tapped(object? sender, EventArgs e)
-        => await DisplayAlert("Hakkımızda",
-            "Kütüphane Kitap Ödünç Alma Sistemi\nSürüm 1.2",
-            "Tamam");
+        => await Navigation.PushAsync(new AboutPage());
 
     private async void Help_Tapped(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync(nameof(SupportPage));

@@ -50,10 +50,10 @@ public partial class CategoryDetailPage : ContentPage
         HeroCountLabel.Text = _category.BookCountText;
 
         BooksList.ItemsSource = filtered
-            .Select((b, i) => new CategoryBookRow
+            .Select(b => new CategoryBookRow
             {
                 Book = b,
-                RatingDisplay = (4.2 + (i % 7) * 0.1).ToString("0.0")
+                RatingDisplay = b.AverageRating?.ToString("0.0") ?? "—"
             })
             .ToList();
     }

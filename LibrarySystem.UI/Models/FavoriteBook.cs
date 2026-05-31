@@ -11,5 +11,5 @@ public class FavoriteBook
     public string BookPublisher { get; set; } = string.Empty;
     public int BookPageCount { get; set; }
     public DateTime AddedAt { get; set; } = DateTime.Now;
-    public string RatingDisplay { get; set; } = "4.6";
+    public string RatingDisplay { get; set; } = "—";
 }
