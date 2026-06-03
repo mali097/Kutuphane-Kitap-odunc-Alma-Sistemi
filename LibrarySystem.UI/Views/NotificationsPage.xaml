@@ -37,37 +37,58 @@
                 <BoxView Grid.Column="2" WidthRequest="44" Color="Transparent" />
             </Grid>
 
-            <VerticalStackLayout Grid.Row="1" Spacing="10">
-                <HorizontalStackLayout Spacing="20" Padding="4,0" HorizontalOptions="Center">
-                    <Label x:Name="TabAll"
-                           Text="Tümü"
-                           FontAttributes="Bold"
-                           TextColor="White">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="TabAll_Tapped" />
-                        </Label.GestureRecognizers>
-                    </Label>
-                    <Label x:Name="TabUnread"
-                           Text="Okunmamış"
-                           TextColor="#E8E0FF">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="TabUnread_Tapped" />
-                        </Label.GestureRecognizers>
-                    </Label>
-                    <Label x:Name="TabRead"
-                           Text="Okunan"
-                           TextColor="#E8E0FF">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="TabRead_Tapped" />
-                        </Label.GestureRecognizers>
-                    </Label>
-                </HorizontalStackLayout>
-                <BoxView x:Name="TabUnderline"
+            <Grid Grid.Row="1"
+                  x:Name="FilterTabsGrid"
+                  ColumnDefinitions="*,*,*"
+                  RowDefinitions="Auto,Auto"
+                  ColumnSpacing="12"
+                  RowSpacing="10"
+                  Padding="8,0"
+                  MaximumWidthRequest="340"
+                  HorizontalOptions="Center">
+                <Label Grid.Row="0"
+                       Grid.Column="0"
+                       x:Name="TabAll"
+                       Text="Tümü"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="TabAll_Tapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <Label Grid.Row="0"
+                       Grid.Column="1"
+                       x:Name="TabUnread"
+                       Text="Okunmamış"
+                       TextColor="#E8E0FF"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="TabUnread_Tapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <Label Grid.Row="0"
+                       Grid.Column="2"
+                       x:Name="TabRead"
+                       Text="Okunan"
+                       TextColor="#E8E0FF"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="TabRead_Tapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <BoxView Grid.Row="1"
+                         Grid.Column="0"
+                         x:Name="TabUnderline"
                          HeightRequest="3"
-                         WidthRequest="52"
+                         WidthRequest="44"
                          Color="#FFB800"
-                         HorizontalOptions="Center" />
-            </VerticalStackLayout>
+                         HorizontalOptions="Center"
+                         VerticalOptions="End" />
+            </Grid>
         </Grid>
 
         <CollectionView Grid.Row="1"

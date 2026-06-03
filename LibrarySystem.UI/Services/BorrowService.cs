@@ -90,7 +90,7 @@ public class BorrowService : IBorrowService
         }
     }
 
-    public async Task<ApiOperationResult> BorrowBookAsync(int bookId, int userId)
+    public async Task<ApiOperationResult> BorrowBookAsync(int bookId, int userId, DateTime? dueDate = null)
     {
         var currentUser = SessionHelper.CurrentUser;
         if (currentUser is null)
@@ -109,7 +109,8 @@ public class BorrowService : IBorrowService
             var response = await _httpClient.PostAsJsonAsync("/api/borrows", new
             {
                 bookId,
-                userId = currentUser.Id
+                userId = currentUser.Id,
+                dueDate = dueDate?.Date
             });
 
             if (response.IsSuccessStatusCode)

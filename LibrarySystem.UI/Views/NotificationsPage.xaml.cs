@@ -18,6 +18,7 @@ public partial class NotificationsPage : ContentPage
         InitializeComponent();
         _notificationService = new NotificationService();
         _borrowService = new BorrowService();
+        SetTabVisual(NotifTab.All);
     }
 
     protected override async void OnAppearing()
@@ -26,6 +27,7 @@ public partial class NotificationsPage : ContentPage
         ThemeHelper.ApplyBottomTab(
             TabNotificationsBtn,
             TabHomeBtn, TabCategoriesBtn, TabFavoritesBtn, TabSettingsBtn);
+        SetTabVisual(_currentTab);
         await ReloadAsync();
     }
 
@@ -130,6 +132,21 @@ public partial class NotificationsPage : ContentPage
         TabUnread.TextColor = tab == NotifTab.Unread ? active : inactive;
         TabRead.FontAttributes = tab == NotifTab.Read ? FontAttributes.Bold : FontAttributes.None;
         TabRead.TextColor = tab == NotifTab.Read ? active : inactive;
+
+        var column = tab switch
+        {
+            NotifTab.Unread => 1,
+            NotifTab.Read => 2,
+            _ => 0
+        };
+
+        Grid.SetColumn(TabUnderline, column);
+        TabUnderline.WidthRequest = tab switch
+        {
+            NotifTab.Unread => 72,
+            NotifTab.Read => 52,
+            _ => 44
+        };
     }
 
     private void TabAll_Tapped(object? sender, EventArgs e)

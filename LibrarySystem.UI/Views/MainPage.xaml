@@ -122,10 +122,11 @@
         <ScrollView x:Name="HomePanel" Grid.Row="2">
             <VerticalStackLayout Padding="14" Spacing="14">
 
-                <Border Style="{StaticResource ThemedCardAlt}"
+                <Border x:Name="AuthorThoughtsSection"
+                        Style="{StaticResource ThemedCardAlt}"
                         StrokeShape="RoundRectangle 20"
                         Padding="14"
-                        MinimumHeightRequest="280">
+                        MinimumHeightRequest="120">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
                             <Border WidthRequest="36" HeightRequest="36"
@@ -160,7 +161,15 @@
 
                         <CollectionView x:Name="QuotesCollection"
                                         ItemsLayout="VerticalList"
-                                        SelectionMode="None">
+                                        SelectionMode="None"
+                                        MinimumHeightRequest="60">
+                            <CollectionView.EmptyView>
+                                <Label Text="Henüz yazar önerisi yok."
+                                       TextColor="{AppThemeBinding Light={StaticResource TextMutedColorLight}, Dark={StaticResource TextMutedColorDark}}"
+                                       FontSize="13"
+                                       HorizontalTextAlignment="Center"
+                                       Margin="0,8" />
+                            </CollectionView.EmptyView>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <Border Style="{StaticResource ThemedCard}"

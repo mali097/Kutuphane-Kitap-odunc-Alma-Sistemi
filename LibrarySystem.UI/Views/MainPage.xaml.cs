@@ -326,28 +326,17 @@ public partial class MainPage : ContentPage
 
     private void UpdateAuthorRecommendationUi()
     {
+        AuthorThoughtsSection.IsVisible = !SessionHelper.IsAdmin;
         AddRecommendationButton.IsVisible = SessionHelper.IsAuthor && !SessionHelper.IsAdmin;
     }
 
     private async Task LoadAuthorRecommendationsAsync()
     {
         var recommendations = await _recommendationService.GetWeeklyRecommendationsAsync();
-        var cards = recommendations.Count > 0
-            ? recommendations.Select(item => new QuoteCard(
-                item.AuthorName,
-                item.BookTitle,
-                item.Idea)).ToList()
-            : GetFallbackQuoteCards();
-
-        QuotesCollection.ItemsSource = cards;
+        QuotesCollection.ItemsSource = recommendations
+            .Select(item => new QuoteCard(item.AuthorName, item.BookTitle, item.Idea))
+            .ToList();
     }
-
-    private static List<QuoteCard> GetFallbackQuoteCards() => new()
-    {
-        new("Orhan Pamuk", "Kara Kitap", "Okumak, hayatta kalmaktır. Kitaplar bizi biz yapan kapılardır."),
-        new("Elif Şafak", "Aşk", "Bir kitap, bir insanı değiştirir; bazen de bir hayatı."),
-        new("Ahmet Ümit", "İstanbul Hatırası", "Her kitap yeni bir maceradır. Okudukça çoğalırız.")
-    };
 
     private async void AddRecommendation_Clicked(object sender, EventArgs e)
     {

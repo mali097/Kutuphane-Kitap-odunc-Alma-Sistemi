@@ -25,8 +25,7 @@ public partial class BorrowPage : ContentPage
         base.OnAppearing();
 
         ErrorLabel.IsVisible = false;
-        _dueDate = DateTime.Today.AddDays(LoanPeriodDays);
-        DueDateLabel.Text = $"{_dueDate:dd.MM.yyyy} ({LoanPeriodDays} gün)";
+        ConfigureDueDatePicker();
 
         if (_books.Count == 0)
             _books.AddRange(await _bookService.GetAllBooksAsync());
@@ -63,18 +62,63 @@ public partial class BorrowPage : ContentPage
         }
 
         var userId = SessionHelper.CurrentUser.Id;
-        var result = await _borrowService.BorrowBookAsync(selected.Id, userId);
+        var result = await _borrowService.BorrowBookAsync(selected.Id, userId, _dueDate);
         if (!result.Success)
         {
             ShowError(result.ErrorMessage ?? "Ödünç alma başarısız.");
             return;
         }
 
+        var loanDays = GetLoanDayCount(_dueDate);
         await DisplayAlert(
             "✅",
-            $"Kitap ödünç alındı.\n{DateTime.Today:dd.MM.yyyy} tarihinde \"{selected.Title}\" kitabını teslim aldınız. {_dueDate:dd.MM.yyyy} tarihine kadar ({LoanPeriodDays} gün içinde) kitabı teslim etmeniz gerekiyor.",
+            $"Kitap ödünç alındı.\n{DateTime.Today:dd.MM.yyyy} tarihinde \"{selected.Title}\" kitabını teslim aldınız. {_dueDate:dd.MM.yyyy} tarihine kadar ({loanDays} gün içinde) kitabı teslim etmeniz gerekiyor.",
             "Tamam");
         await Navigation.PopAsync();
+    }
+
+    private async void Back_Clicked(object? sender, EventArgs e)
+    {
+        if (Navigation.NavigationStack.Count > 1)
+            await Navigation.PopAsync();
+    }
+
+    private void ConfigureDueDatePicker()
+    {
+        var today = DateTime.Today;
+        var maxDue = today.AddDays(LoanPeriodDays);
+
+        DueDatePicker.MinimumDate = today;
+        DueDatePicker.MaximumDate = maxDue;
+        DueDatePicker.Date = maxDue;
+        UpdateDueDate(maxDue);
+    }
+
+    private void DueDatePicker_DateSelected(object? sender, DateChangedEventArgs e)
+    {
+        UpdateDueDate(e.NewDate);
+    }
+
+    private void UpdateDueDate(DateTime date)
+    {
+        var today = DateTime.Today;
+        var clamped = date.Date;
+        if (clamped < today)
+            clamped = today;
+        if (clamped > today.AddDays(LoanPeriodDays))
+            clamped = today.AddDays(LoanPeriodDays);
+
+        _dueDate = clamped;
+        var days = GetLoanDayCount(clamped);
+        DueDateLabel.Text = days >= LoanPeriodDays
+            ? $"Son teslim: {clamped:dd.MM.yyyy} ({LoanPeriodDays} gün)"
+            : $"Seçilen süre: {days} gün — son teslim {clamped:dd.MM.yyyy}";
+    }
+
+    private static int GetLoanDayCount(DateTime dueDate)
+    {
+        var days = (int)(dueDate.Date - DateTime.Today).TotalDays;
+        return Math.Max(1, days);
     }
 
     private void ShowError(string msg)

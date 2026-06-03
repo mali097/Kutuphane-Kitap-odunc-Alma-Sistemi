@@ -35,7 +35,10 @@ public sealed class BorrowService : IBorrowService
         book.IsAvailable = false;
 
         var borrowDate = DateTime.UtcNow;
-        var expectedReturnDate = BorrowPolicies.CalculateDueDate(borrowDate);
+        var expectedReturnDate = request.ExpectedReturnDate.HasValue
+                                 && BorrowPolicies.IsValidExpectedReturnDate(borrowDate, request.ExpectedReturnDate.Value)
+            ? BorrowPolicies.ToEndOfDay(request.ExpectedReturnDate.Value)
+            : BorrowPolicies.CalculateDueDate(borrowDate);
 
         var borrowRecord = new BorrowRecord
         {

@@ -1,65 +1,203 @@
 <?xml version="1.0" encoding="utf-8" ?>
+
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+
              x:Class="LibrarySystem.UI.Views.BorrowPage"
-             Title="📚 Ödünç Al">
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="14">
 
-            <Label Text="Kitap Seçin *" FontAttributes="Bold" />
-            <Picker x:Name="BookPicker" Title="Kitap seçin..." />
+             Title="Ödünç Al"
 
-            <Label Text="Son teslim tarihi (15 gün)" FontAttributes="Bold" />
-            <Border BackgroundColor="#E8F5E9"
-                    Stroke="#A5D6A7"
-                    StrokeShape="RoundRectangle 12"
-                    Padding="14,12">
-                <VerticalStackLayout Spacing="4">
-                    <Label x:Name="DueDateLabel"
-                           FontSize="16"
-                           FontAttributes="Bold"
-                           TextColor="#2E7D32" />
-                    <Label Text="Ödünç süresi sabittir: kitabı aldığınız günden itibaren 15 gün içinde iade etmelisiniz. Son 3 günde hatırlatma bildirimi gönderilir."
-                           FontSize="12"
-                           TextColor="#558B2F"
-                           LineBreakMode="WordWrap" />
+             Shell.NavBarIsVisible="False">
+
+
+
+    <ContentPage.Resources>
+
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+
+            <GradientStop Color="#2F1B68" Offset="0.0" />
+
+            <GradientStop Color="#B63B6E" Offset="0.55" />
+
+            <GradientStop Color="#F29B3A" Offset="1.0" />
+
+        </LinearGradientBrush>
+
+    </ContentPage.Resources>
+
+
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Grid Grid.Row="0"
+
+              Background="{StaticResource HeaderGradient}"
+
+              Padding="14,48,14,16"
+
+              ColumnDefinitions="Auto,*,Auto">
+
+            <Button Text="←"
+
+                    FontSize="20"
+
+                    TextColor="White"
+
+                    BackgroundColor="Transparent"
+
+                    Padding="4"
+
+                    Clicked="Back_Clicked" />
+
+            <Label Grid.Column="1"
+
+                   Text="📚 Ödünç Al"
+
+                   TextColor="White"
+
+                   FontSize="18"
+
+                   FontAttributes="Bold"
+
+                   HorizontalTextAlignment="Center"
+
+                   VerticalOptions="Center" />
+
+            <BoxView Grid.Column="2" WidthRequest="44" Color="Transparent" />
+
+        </Grid>
+
+
+
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout Padding="20" Spacing="14">
+
+
+
+                <Label Text="Kitap Seçin *" FontAttributes="Bold" />
+
+                <Picker x:Name="BookPicker" Title="Kitap seçin..." />
+
+
+
+                <Label Text="Son teslim tarihi (15 gün)" FontAttributes="Bold" />
+
+                <Border BackgroundColor="#E8F5E9"
+
+                        Stroke="#A5D6A7"
+
+                        StrokeShape="RoundRectangle 12"
+
+                        Padding="14,12">
+
+                    <VerticalStackLayout Spacing="8">
+
+                        <DatePicker x:Name="DueDatePicker"
+
+                                    Format="dd.MM.yyyy"
+
+                                    TextColor="#2E7D32"
+
+                                    FontAttributes="Bold"
+
+                                    DateSelected="DueDatePicker_DateSelected" />
+
+                        <Label x:Name="DueDateLabel"
+
+                               FontSize="13"
+
+                               TextColor="#558B2F" />
+
+                        <Label Text="Kitabı aldığınız günden itibaren 15 gün içinde iade etmelisiniz. Son teslim tarihini aşağıdan seçebilirsiniz."
+
+                               FontSize="12"
+
+                               TextColor="#558B2F"
+
+                               LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+
+
+                <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
+
+
+
+                <Button Text="✅ Ödünç Al" BackgroundColor="#FF6F00" TextColor="White"
+
+                        CornerRadius="10" HeightRequest="50" FontAttributes="Bold"
+
+                        Clicked="Borrow_Clicked" />
+
+
+
+                <VerticalStackLayout x:Name="OverdueSection" IsVisible="False" Spacing="8" Margin="0,20,0,0">
+
+                    <Label Text="⚠️ Geciken İadeler" FontAttributes="Bold"
+
+                           FontSize="16" TextColor="#C62828" />
+
+
+
+                    <CollectionView x:Name="OverdueList" EmptyView="Geciken iade yok 🎉">
+
+                        <CollectionView.ItemTemplate>
+
+                            <DataTemplate>
+
+                                <Border Margin="0,4" Padding="12" BackgroundColor="#FFEBEE"
+
+                                        StrokeShape="RoundRectangle 10" Stroke="#EF9A9A">
+
+                                    <Grid ColumnDefinitions="*,Auto">
+
+                                        <VerticalStackLayout Grid.Column="0">
+
+                                            <Label Text="{Binding BookTitle}" FontAttributes="Bold" TextColor="#B71C1C" />
+
+                                            <Label Text="{Binding UserFullName}" TextColor="Gray" FontSize="13" />
+
+                                            <Label Text="{Binding DueDate, StringFormat='Son iade: {0:dd.MM.yyyy}'}"
+
+                                                   TextColor="#EF5350" FontSize="12" />
+
+                                        </VerticalStackLayout>
+
+                                        <VerticalStackLayout Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+
+                                            <Label Text="{Binding DaysOverdue, StringFormat='{0} gün'}"
+
+                                                   FontAttributes="Bold" TextColor="#B71C1C" FontSize="16" />
+
+                                            <Label Text="{Binding Fine, StringFormat='💸 {0:F1} TL'}"
+
+                                                   TextColor="#E65100" FontSize="13" />
+
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+
+                                </Border>
+
+                            </DataTemplate>
+
+                        </CollectionView.ItemTemplate>
+
+                    </CollectionView>
+
                 </VerticalStackLayout>
-            </Border>
 
-            <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
-
-            <Button Text="✅ Ödünç Al" BackgroundColor="#FF6F00" TextColor="White"
-                    CornerRadius="10" HeightRequest="50" FontAttributes="Bold"
-                    Clicked="Borrow_Clicked" />
-
-            <VerticalStackLayout x:Name="OverdueSection" IsVisible="False" Spacing="8" Margin="0,20,0,0">
-            <Label Text="⚠️ Geciken İadeler" FontAttributes="Bold"
-                   FontSize="16" TextColor="#C62828" />
-
-            <CollectionView x:Name="OverdueList" EmptyView="Geciken iade yok 🎉">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Margin="0,4" Padding="12" BackgroundColor="#FFEBEE"
-                                StrokeShape="RoundRectangle 10" Stroke="#EF9A9A">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <VerticalStackLayout Grid.Column="0">
-                                    <Label Text="{Binding BookTitle}" FontAttributes="Bold" TextColor="#B71C1C" />
-                                    <Label Text="{Binding UserFullName}" TextColor="Gray" FontSize="13" />
-                                    <Label Text="{Binding DueDate, StringFormat='Son iade: {0:dd.MM.yyyy}'}"
-                                           TextColor="#EF5350" FontSize="12" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
-                                    <Label Text="{Binding DaysOverdue, StringFormat='{0} gün'}"
-                                           FontAttributes="Bold" TextColor="#B71C1C" FontSize="16" />
-                                    <Label Text="{Binding Fine, StringFormat='💸 {0:F1} TL'}"
-                                           TextColor="#E65100" FontSize="13" />
-                                </VerticalStackLayout>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
             </VerticalStackLayout>
-        </VerticalStackLayout>
-    </ScrollView>
+
+        </ScrollView>
+
+    </Grid>
+
 </ContentPage>
+
+

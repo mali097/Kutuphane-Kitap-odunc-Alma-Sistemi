@@ -171,7 +171,8 @@ public class AuthService : IAuthService
 
         if (string.Equals(expectedRole, "Student", StringComparison.OrdinalIgnoreCase))
         {
-            return string.Equals(actualRole, "Student", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(actualRole, "Student", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(actualRole, "Admin", StringComparison.OrdinalIgnoreCase);
         }
 
         return string.Equals(actualRole, expectedRole, StringComparison.OrdinalIgnoreCase);

@@ -773,7 +773,8 @@ app.MapPost("/api/borrow-records/borrow", async (
     var borrowRequest = new BorrowBookRequest
     {
         UserId = authorization.IsAdmin ? request.UserId : authorization.UserId!.Value,
-        BookId = request.BookId
+        BookId = request.BookId,
+        ExpectedReturnDate = request.ExpectedReturnDate
     };
 
     var recordId = await borrowService.BorrowBookAsync(borrowRequest, actorUserId, cancellationToken);
@@ -898,7 +899,8 @@ app.MapPost("/api/borrows", async (
     var borrowRequest = new BorrowBookRequest
     {
         UserId = authorization.IsAdmin ? request.UserId : authorization.UserId!.Value,
-        BookId = request.BookId
+        BookId = request.BookId,
+        ExpectedReturnDate = request.DueDate
     };
 
     var recordId = await borrowService.BorrowBookAsync(borrowRequest, actorUserId, cancellationToken);
@@ -1484,6 +1486,12 @@ static Dictionary<string, string[]> ValidateBorrowBookRequest(BorrowBookRequest 
         errors["bookId"] = ["BookId must be greater than 0."];
     }
 
+    if (request.ExpectedReturnDate.HasValue
+        && !BorrowPolicies.IsValidExpectedReturnDate(DateTime.UtcNow, request.ExpectedReturnDate.Value))
+    {
+        errors["expectedReturnDate"] = [$"Expected return date must be between today and {BorrowPolicies.LoanPeriodDays} days from today."];
+    }
+
     return errors;
 }
 
@@ -1610,6 +1618,12 @@ static Dictionary<string, string[]> ValidateCreateBorrowApiRequest(CreateBorrowA
     if (request.BookId <= 0)
     {
         errors["bookId"] = ["Book id must be greater than zero."];
+    }
+
+    if (request.DueDate.HasValue
+        && !BorrowPolicies.IsValidExpectedReturnDate(DateTime.UtcNow, request.DueDate.Value))
+    {
+        errors["dueDate"] = [$"Due date must be between today and {BorrowPolicies.LoanPeriodDays} days from today."];
     }
 
     return errors;
