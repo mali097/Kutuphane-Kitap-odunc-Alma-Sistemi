@@ -28,7 +28,7 @@
     <Grid BackgroundColor="#F3F1F8">
         <controls:AuthPageHeader x:Name="AuthHeader"
                                  Title="Giriş Yap"
-                                 Subtitle="Hesabınıza giriş yaparak kitap dünyasına devam edin"
+                                 Subtitle="Hesabınıza giriş yaparak kitap dünyasına devam edin "
                                  Illustration="Login"
                                  BackClicked="AuthHeader_BackClicked"
                                  VerticalOptions="Start" />
