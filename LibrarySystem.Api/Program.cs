@@ -238,7 +238,9 @@ app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authSer
 
     var response = await authService.LoginAsync(request, cancellationToken);
     return response is null
-        ? Results.BadRequest(new { Message = "Invalid email or password." })
+        ? Results.BadRequest(new { Message = "E-posta ya da şifre hatalı."
+
+ })
         : Results.Ok(response);
 });
 
