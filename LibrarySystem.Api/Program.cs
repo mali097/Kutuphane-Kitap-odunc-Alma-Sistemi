@@ -227,6 +227,8 @@ app.MapPost("/api/users/register", async (
     var newUserId = await userService.AddAsync(createRequest, actorUserId: 0, cancellationToken);
     return Results.Created($"/api/users/{newUserId}", new { Message = "User registered successfully.", UserId = newUserId });
 });
+// Kayıt, giriş ve şifre akışı birlikte denendi.
+
 
 app.MapPost("/api/auth/login", async (LoginRequest request, IAuthService authService, CancellationToken cancellationToken) =>
 {
