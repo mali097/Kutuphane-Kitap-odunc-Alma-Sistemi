@@ -286,7 +286,9 @@ app.MapPost("/api/auth/change-password", async (
 
     var isChanged = await authService.ChangePasswordAsync(userId.Value, request, cancellationToken);
     return isChanged
-        ? Results.Ok(new { Message = "Password changed." })
+        ? Results.Ok(new { Message = "Password changed."
+
+ })
         : Results.BadRequest(new { Message = "Current password is invalid." });
 });
 
