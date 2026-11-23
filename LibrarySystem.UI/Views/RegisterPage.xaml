@@ -28,7 +28,7 @@
     <Grid BackgroundColor="#F3F1F8">
         <controls:AuthPageHeader x:Name="AuthHeader"
                                  Title="Kayıt Ol"
-                                 Subtitle="Yeni hesap oluşturarak kitap dünyamıza katılın"
+                                 Subtitle="Yeni hesap oluştur ve kitap dünyamıza katıl"
                                  Illustration="Register"
                                  ShowBackButton="True"
                                  BackClicked="AuthHeader_BackClicked"
